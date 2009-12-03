@@ -160,7 +160,7 @@ for prog in "$@"; do
   if [ "$do_update" == "yes" ]; then
     if [ -z "${have_hg/* $prog *}" ]; then
       echo "updating from hg repo"
-      hg --config extensions.hgext.fetch fetch
+      hg --config extensions.hgext.fetch= fetch
     else
       echo "updating from svn repo"
       svn update
