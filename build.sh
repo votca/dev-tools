@@ -1,7 +1,7 @@
 #!/bin/bash
 
 usage="Usage: ${0##*/} [options] progs"
-prefix="$HOME/csg"
+prefix="$HOME/votca"
 #mind the spaces
 all=" tools csg moo kmc tof "
 
@@ -12,18 +12,36 @@ do_build="yes"
 do_install="yes"
 do_update="no"
 
-svn_co="svn co http://csgth.mpip-mainz.mpg.de/svn/PROG/trunk PROG"
-
-have_hg=" tools csg "
 hg_co="hg clone http://dev.votca.org/votca/PROG PROG"
 
 extra_conf=""
 
 gromacs="no"
 
+BLUE="[34;01m"
+CYAN="[36;01m"
+GREEN="[32;01m"
+RED="[31;01m"
+OFF="[0m"
+
 die () {
-  echo -e "$*" >&2
+  cecho RED "$*" >&2
   exit 1
+}
+
+cecho() {
+  local opts color=" BLUE CYAN GREEN RED "
+  if [ -z "${1##-*}" ]; then
+    opts="$1"
+    shift
+  fi
+  [ -z "$2" ] && die "cecho: Missing argumet"
+  [ -n "${color//* $1 *}" ] && die "cecho: Unknown color ($color allowed)"
+  color=${!1}
+  shift
+  echo -n ${color}
+  echo -ne "$@"
+  echo $opts "${OFF}"
 }
 
 prefix_clean() {
@@ -34,12 +52,12 @@ prefix_clean() {
     cd -
     return
   fi
-  echo "I will remove:"
+  echo "I will $(cecho RED remove):"
   echo $files
-  echo -e "CTRL-C to stop it"
+  cecho RED "CTRL-C to stop it"
   countdown 10
   rm -rf $files
-  echo -e "\nDone, hope you are happy now"
+  cecho GREEN "Done, hope you are happy now"
   cd -
 }
 
@@ -47,7 +65,7 @@ countdown() {
   [ -z "$1" ] && "countdown: Missing argument"
   [ -n "${1//[0-9]}" ] && "countdown: argument should be a number"
   for ((i=$1;i>0;i--)); do
-    echo -n "$i "
+    cecho -n CYAN "$i "
     sleep 1
   done
   echo
@@ -55,26 +73,38 @@ countdown() {
 
 show_help () {
   cat << eof
-This is a helper script to build votca + rest
+This is the votca build utils  to build votca + rest
 Give progs to compile or nothing meaning "$all"
+
+Please visit $(cecho BLUE www.votca.org)
+
+The most recent verision can be found at:
+$(cecho BLUE http://dev.votca.org/votca/buildutil/raw-file/tip/build.sh)
 
 $usage
 OPTIONS:
--h, --help              Show this help
--u, --do-update         Do a update from svn/hg
--c, --clean-out         Clean out the prefix
-    --no-configure      Don't run ./configure
-    --conf-opts TEXT    Extra configure options
-    --no-clean          Don't run make clean
-    --no-build          Don't run make
-    --no-install        Don't run make install
-    --prefix <prefix>   use prefix
+-h, $(cecho GREEN --help)              Show this help
+    $(cecho GREEN --nocolor)           Disable color
+-u, $(cecho GREEN --do-update)         Do a update from hg
+-c, $(cecho GREEN --clean-out)         Clean out the prefix
+    $(cecho GREEN --no-configure)      Don't run ./configure
+    $(cecho GREEN --conf-opts) $(cecho CYAN OPTS)    Extra configure options
+    $(cecho GREEN --no-clean)          Don't run make clean
+    $(cecho GREEN --no-build)          Don't run make
+    $(cecho GREEN --no-install)        Don't run make install
+    $(cecho GREEN --prefix) $(cecho CYAN \<prefix\>)   use prefix
                         Default: $prefix
--g, --gromacs           Set gromacs stuff base up your \$GMXLDLIB
+-g, $(cecho GREEN --gromacs)           Set gromacs stuff base up your \$GMXLDLIB
 
 Examples:  ${0##*/} tools csg
            ${0##*/} --do-checkout --prefix ~/tof 
            ${0##*/} -cug tools csg
+	
+Note: for no passwd the following 4 lines to ~/.hgrc
+[auth]
+votca.prefix = http://dev.votca.org/
+votca.username = $USER (???)
+votca.password = XXXXX
 
 eof
 }
@@ -118,6 +148,9 @@ while [ "${1#-}" != "$1" ]; do
    --prefix)
     prefix="$2"
     shift 2;;
+   --nocolor)
+   unset BLUE CYAN GREEN OFF RED
+   shift;;
   *)
    die "Unknown option '$1'"
    exit 1;;
@@ -147,41 +180,37 @@ for prog in "$@"; do
   [ -n "${all//* $prog *}" ] && die "Unknown progamm '$prog', I know$all"
 
   if [ ! -d "$prog" ]; then
-    echo "Doing checkout for $prog (CTRL-C to stop)"
+    cecho GREEN "Doing checkout for $prog (CTRL-C to stop)"
     countdown 5
-    if [ -z "${have_hg/* $prog *}" ]; then
-      ${hg_co//PROG/$prog}
-    else
-      ${svn_co//PROG/$prog}
-    fi
+    ${hg_co//PROG/$prog}
   fi
 
   cd $prog
   if [ "$do_update" == "yes" ]; then
-    if [ -z "${have_hg/* $prog *}" ]; then
-      echo "updating from hg repo"
-      hg --config extensions.hgext.fetch= fetch
-    else
-      echo "updating from svn repo"
-      svn update
-    fi
+    cecho GREEN "updating from hg repo"
+    hg --config extensions.hgext.fetch= fetch
   fi
-  echo "compiling $prog"
+  cecho GREEN "compiling $prog"
   if [ "$do_configure" == "yes" ]; then
     ./bootstrap.sh 
     ./configure --prefix "$prefix" $extra_conf 
   fi
   if [ "$do_clean" == "yes" ]; then
-    echo cleaning $prog
+    cecho GREEN "cleaning $prog"
     make clean
   fi
   if [ "$do_build" == "no" ]; then 
     cd .. 
     continue
   fi
+  cecho GREEN "buidling $prog"
   make
-  [ "$do_install" == "yes" ] && make install
+  if [ "$do_install" == "yes" ]; then 
+    cecho GREEN "installing $prog"
+    make install
+  fi
   cd ..
+  cecho GREEN "done with $prog"
 done
 set +e
 
