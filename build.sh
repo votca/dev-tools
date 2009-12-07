@@ -73,20 +73,20 @@ countdown() {
 
 show_help () {
   cat << eof
-This is the votca build utils  to build votca + rest
-Give progs to compile or nothing meaning "$all"
+This is the votca build utils to build votca + rest
+Give multiple programs to build them. Nothing meaning:$all
 
-Please visit $(cecho BLUE www.votca.org)
+Please visit: $(cecho BLUE www.votca.org)
 
-The most recent verision can be found at:
+The most recent version can be found at:
 $(cecho BLUE http://dev.votca.org/votca/buildutil/raw-file/tip/build.sh)
 
 $usage
 OPTIONS:
--h, $(cecho GREEN --help)              Show this help
+$(cecho GREEN -h), $(cecho GREEN --help)              Show this help
     $(cecho GREEN --nocolor)           Disable color
--u, $(cecho GREEN --do-update)         Do a update from hg
--c, $(cecho GREEN --clean-out)         Clean out the prefix
+$(cecho GREEN -u), $(cecho GREEN --do-update)         Do a update from hg
+$(cecho GREEN -c), $(cecho GREEN --clean-out)         Clean out the prefix
     $(cecho GREEN --no-configure)      Don't run ./configure
     $(cecho GREEN --conf-opts) $(cecho CYAN OPTS)    Extra configure options
     $(cecho GREEN --no-clean)          Don't run make clean
@@ -94,13 +94,13 @@ OPTIONS:
     $(cecho GREEN --no-install)        Don't run make install
     $(cecho GREEN --prefix) $(cecho CYAN \<prefix\>)   use prefix
                         Default: $prefix
--g, $(cecho GREEN --gromacs)           Set gromacs stuff base up your \$GMXLDLIB
+$(cecho GREEN -g), $(cecho GREEN --gromacs)           Set gromacs stuff base up your \$GMXLDLIB
 
 Examples:  ${0##*/} tools csg
            ${0##*/} --do-checkout --prefix ~/tof 
            ${0##*/} -cug tools csg
 	
-Note: for no passwd the following 4 lines to ~/.hgrc
+Note: for no passwd add the following 4 lines to your ~/.hgrc
 [auth]
 votca.prefix = http://dev.votca.org/
 votca.username = $USER (???)
