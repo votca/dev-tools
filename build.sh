@@ -163,6 +163,9 @@ while [ "${1#-}" != "$1" ]; do
    --prefix)
     prefix="$2"
     shift 2;;
+   --conf-opts)
+    extra_conf="$2"
+    shift 2;;
    --nocolor)
    unset BLUE CYAN GREEN OFF RED
    shift;;
