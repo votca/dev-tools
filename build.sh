@@ -1,6 +1,6 @@
 #!/bin/bash
 
-usage="Usage: ${0##*/} [options] progs"
+usage="Usage: ${0##*/} [options] [progs]"
 prefix="$HOME/votca"
 #mind the spaces
 all=" tools csg moo kmc tof "
@@ -73,10 +73,21 @@ countdown() {
 
 show_help () {
   cat << eof
-This is the votca build utils to build votca + rest
-Give multiple programs to build them. Nothing meaning:$all
+This is the votca build utils which builds votca modules
+Give multiple programs to build them. Nothing means:$all
 
 Please visit: $(cecho BLUE www.votca.org)
+
+The normal sequence of a build is:
+- hg clone (if src is not there)
+- hg fetch (enable --do-build)
+  (stop here with --no-configure)
+- bootstrap
+- configure
+- make clean (disable with --no-clean)
+  (stop here with --no-build)    
+- make 
+- make install (disable with --no-install)
 
 The most recent version can be found at:
 $(cecho BLUE http://dev.votca.org/votca/buildutil/raw-file/tip/build.sh)
@@ -87,10 +98,10 @@ $(cecho GREEN -h), $(cecho GREEN --help)              Show this help
     $(cecho GREEN --nocolor)           Disable color
 $(cecho GREEN -u), $(cecho GREEN --do-update)         Do a update from hg
 $(cecho GREEN -c), $(cecho GREEN --clean-out)         Clean out the prefix
-    $(cecho GREEN --no-configure)      Don't run ./configure
+    $(cecho GREEN --no-configure)      Stop after update (before bootstrap)
     $(cecho GREEN --conf-opts) $(cecho CYAN OPTS)    Extra configure options
     $(cecho GREEN --no-clean)          Don't run make clean
-    $(cecho GREEN --no-build)          Don't run make
+    $(cecho GREEN --no-build)          Stop before build
     $(cecho GREEN --no-install)        Don't run make install
     $(cecho GREEN --prefix) $(cecho CYAN \<prefix\>)   use prefix
                         Default: $prefix
@@ -99,8 +110,10 @@ $(cecho GREEN -g), $(cecho GREEN --gromacs)           Set gromacs stuff base up 
 Examples:  ${0##*/} tools csg
            ${0##*/} --do-checkout --prefix ~/tof 
            ${0##*/} -cug tools csg
+	   ${0##*/} -u
 	
-Note: for no passwd add the following 4 lines to your ~/.hgrc
+Note: for no password question from hg
+      add the following 4 lines to your ~/.hgrc
 [auth]
 votca.prefix = http://dev.votca.org/
 votca.username = $USER (???)
@@ -170,9 +183,9 @@ if [ "$gromacs" = "yes" ]; then
 fi
 export CPPFLAGS LDFLAGS
 
-echo "prefix = $prefix"
-echo "CPPFLAGS = $CPPFLAGS"
-echo "LDFLAGS = $LDFLAGS"
+echo "prefix is '$prefix'"
+echo "CPPFLAGS is '$CPPFLAGS'"
+echo "LDFLAGS is '$LDFLAGS'"
 [ "$prefix_clean" = "yes" ] && prefix_clean
 
 set -e
@@ -193,7 +206,11 @@ for prog in "$@"; do
   cecho GREEN "compiling $prog"
   if [ "$do_configure" == "yes" ]; then
     ./bootstrap.sh 
-    ./configure --prefix "$prefix" $extra_conf 
+    ./configure --prefix "$prefix" $extra_conf
+  else
+    cd ..
+    cecho GREEN "done with $prog"
+    continue 
   fi
   if [ "$do_clean" == "yes" ]; then
     cecho GREEN "cleaning $prog"
@@ -201,6 +218,7 @@ for prog in "$@"; do
   fi
   if [ "$do_build" == "no" ]; then 
     cd .. 
+    cecho GREEN "done with $prog"
     continue
   fi
   cecho GREEN "buidling $prog"
