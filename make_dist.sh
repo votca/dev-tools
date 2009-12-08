@@ -7,6 +7,7 @@ standard=" tools csg "
 build="build"
 exten=".tar.gz"
 clean="no"
+extra_opts=""
 
 die () {
   echo "$*" >&2
@@ -38,6 +39,7 @@ OPTIONS:
     --exten XXX         Change tarball extension
                         Default: $exten
     --clean             Clean tmpdir at the end
+    --ccache            Enable ccache
 
 
 Examples:  ${0##*/} tools csg
@@ -72,6 +74,9 @@ while [ "${1#-}" != "$1" ]; do
   --clean)
     clean="yes"
     shift 1;;
+  --ccache)
+    extra_opts="--ccache"
+    shift 1;;
   *)
    die "Unknown option '$1'"
    exit 1;;
@@ -91,7 +96,7 @@ cp $build $tmpdir/build
 set -e
 for prog in "$@"; do
   oldpwd="$PWD"
-  ./$build -g --prefix $tmpdir --no-build $prog
+  ./$build -g --prefix $tmpdir --no-build ${extra_opts} $prog
   cd $prog
   make dist
   tarball="$(ls *${exten})" || die "No tarball found"
@@ -101,7 +106,7 @@ for prog in "$@"; do
   cd $tmpdir
   tar -xzf $tarball
   mv ${tarball%${exten}} $prog
-  ./build -g --no-clean --prefix $tmpdir $prog
+  ./build -g --no-clean --prefix $tmpdir ${extra_opts} $prog
  cd $oldpwd 
 done
 

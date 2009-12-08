@@ -98,6 +98,7 @@ $usage
 OPTIONS:
 $(cecho GREEN -h), $(cecho GREEN --help)              Show this help
     $(cecho GREEN --nocolor)           Disable color
+    $(cecho GREEN --ccache)            Enable ccache
 $(cecho GREEN -u), $(cecho GREEN --do-update)         Do a update from hg
 $(cecho GREEN -c), $(cecho GREEN --clean-out)         Clean out the prefix
     $(cecho GREEN --no-configure)      Stop after update (before bootstrap)
@@ -166,6 +167,10 @@ while [ "${1#-}" != "$1" ]; do
    --conf-opts)
     extra_conf="$2"
     shift 2;;
+   --ccache)
+    [ -z "$(type ccache)" ] && die "${0##*/}: ccache not found"
+    export CXX="ccache ${CXX:=g++}"
+    shift;;
    --nocolor)
    unset BLUE CYAN GREEN OFF RED
    shift;;
