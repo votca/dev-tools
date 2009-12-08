@@ -4,6 +4,7 @@ usage="Usage: ${0##*/} [options] [progs]"
 prefix="$HOME/votca"
 #mind the spaces
 all=" tools csg moo kmc tof testsuite "
+standard=" tools csg moo kmc tof "
 
 do_prefix_clean="no"
 do_configure="yes"
@@ -74,7 +75,8 @@ countdown() {
 show_help () {
   cat << eof
 This is the votca build utils which builds votca modules
-Give multiple programs to build them. Nothing means:$all
+Give multiple programs to build them. Nothing means:$standard
+One can build:$all
 
 Please visit: $(cecho BLUE www.votca.org)
 
@@ -170,7 +172,7 @@ while [ "${1#-}" != "$1" ]; do
  esac
 done
 
-[ -z "$1" ] && set -- $all
+[ -z "$1" ] && set -- $standard
 [ -z "$prefix" ] && die "Error: prefix is empty"
 
 
