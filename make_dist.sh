@@ -36,7 +36,7 @@ OPTIONS:
 -b, --build NAME        Change the name of the build script
                         Defauilt: $build
     --exten XXX         Change tarball extension
-                        Default: $extent
+                        Default: $exten
     --clean             Clean tmpdir at the end
 
 
