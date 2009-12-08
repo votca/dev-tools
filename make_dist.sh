@@ -97,7 +97,7 @@ for prog in "$@"; do
   tarball="$(ls *${exten})" || die "No tarball found"
   echo tarball is $tarball
   cp $tarball $tmpdir
-  cp $tarball ..
+  mv $tarball ..
   cd $tmpdir
   tar -xzf $tarball
   mv ${tarball%${exten}} $prog
