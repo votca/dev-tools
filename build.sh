@@ -3,7 +3,7 @@
 usage="Usage: ${0##*/} [options] [progs]"
 prefix="$HOME/votca"
 #mind the spaces
-all=" tools csg moo kmc tof "
+all=" tools csg moo kmc tof testsuite "
 
 do_prefix_clean="no"
 do_configure="yes"
