@@ -205,9 +205,9 @@ for prog in "$@"; do
     cecho GREEN "updating from hg repo"
     hg --config extensions.hgext.fetch= fetch
   fi
-  cecho GREEN "compiling $prog"
+  cecho GREEN "configuring $prog"
   if [ "$do_configure" == "yes" ]; then
-    ./bootstrap.sh 
+    [ -f bootstrap.sh ] && ./bootstrap.sh 
     ./configure --prefix "$prefix" $extra_conf
   else
     cd ..
