@@ -6,8 +6,9 @@ all=" tools csg moo kmc tof"
 standard=" tools csg "
 build="build"
 exten=".tar.gz"
-clean="no"
+clean="yes"
 extra_opts=""
+ccache_opt="--ccache"
 
 die () {
   echo "$*" >&2
@@ -27,7 +28,7 @@ The normal sequence of a build is:
 - cp tarball to a tmpdir (change with --tmpdir)
 - unpack tarball
 - ./build -g --prefix tmpdir prog
-- rm tmpdir
+- rm tmpdir (disable with --no-clean)
 
 $usage
 OPTIONS:
@@ -38,8 +39,8 @@ OPTIONS:
                         Defauilt: $build
     --exten XXX         Change tarball extension
                         Default: $exten
-    --clean             Clean tmpdir at the end
-    --ccache            Enable ccache
+    --no-clean          Do not clean the tmpdir after sucess dist
+    --no-ccache         Disable ccache
 
 
 Examples:  ${0##*/} tools csg
@@ -71,11 +72,11 @@ while [ "${1#-}" != "$1" ]; do
   --exten)
     exten="$2"
     shift 2;;
-  --clean)
-    clean="yes"
+  --no-clean)
+    clean="no"
     shift 1;;
-  --ccache)
-    extra_opts="--ccache"
+  --no-ccache)
+    ccache_opt=""
     shift 1;;
   *)
    die "Unknown option '$1'"
@@ -91,22 +92,23 @@ fi
 echo tmpdir is $tmpdir
 [ -z "$1" ] && set -- $standard
 [ -x "$build" ] || die "${0##*/}: build script is wrong"
-cp $build $tmpdir/build
+mkdir -p $tmpdir/src
+cp $build $tmpdir/src/build
 
 set -e
 for prog in "$@"; do
   oldpwd="$PWD"
-  ./$build -g --prefix $tmpdir --no-build ${extra_opts} $prog
+  ./$build -g --prefix $tmpdir --no-build ${extra_opts} ${ccache_opt} $prog
   cd $prog
   make dist
   tarball="$(ls *${exten})" || die "No tarball found"
   echo tarball is $tarball
-  cp $tarball $tmpdir
+  cp $tarball $tmpdir/src
   mv $tarball ..
-  cd $tmpdir
+  cd $tmpdir/src
   tar -xzf $tarball
   mv ${tarball%${exten}} $prog
-  ./build -g --no-clean --prefix $tmpdir ${extra_opts} $prog
+  ./build -g --no-clean --prefix $tmpdir ${extra_opts}  ${ccache_opt} $prog
  cd $oldpwd 
 done
 
@@ -115,4 +117,5 @@ if [ "$clean" = "yes" ]; then
   rm -rf $tmpdir
 fi
 set +e
+echo "make dist was successful"
 
