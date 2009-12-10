@@ -211,7 +211,8 @@ for prog in "$@"; do
   cd $prog
   if [ "$do_update" == "yes" ]; then
     cecho GREEN "updating from hg repo"
-    hg --config extensions.hgext.fetch= fetch
+    hg pull
+    hg update
   fi
   cecho GREEN "configuring $prog"
   if [ "$do_configure" == "yes" ]; then
