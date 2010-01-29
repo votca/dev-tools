@@ -10,7 +10,8 @@ gc_user="googlebot@votca.org"
 gc_passwd="VB8kF5Sv9Dk4"
 gc_upload="./googlecode_upload.py"
 gc_project="votca"
-serverpath="thadmin@csgth:/var/csg/downloads"
+serverpath="thadmin@csgth:."
+dlpath="/var/csg/downloads"
 echo="echo"
 
 die () {
@@ -71,6 +72,11 @@ for tarball in "$@"; do
   [ -z "${BASH_REMATCH[1]}" ] && die "Could not fetch package name"
   [ -z "${BASH_REMATCH[2]}" ] && die "Could not fetch package version"
   summary="Votca ${BASH_REMATCH[1]} - Version ${BASH_REMATCH[2]}"
-  $echo $gc_upload -s "$summary" -p "$gc_project" -u "$gc_user" -w "$gc_passwd" "$tarball" || die " $gc_upload failed"
-  $echo scp "$tarball" "$serverpath/$name"
+  if [ "$USER" = "thadmin" ] && [ "$HOSTNAME" = "csgth" ]; then
+    [ -f "$gc_upload" ] || die "Could not find $gc_upload"
+    $echo $gc_upload -s "$summary" -p "$gc_project" -u "$gc_user" -w "$gc_passwd" "$tarball" || die " $gc_upload failed"
+    $echo sudo -u www-data cp "$tarball" "$dlpath/$name"
+  else
+    $echo scp $tarball $serverpath
+  fi
 done
