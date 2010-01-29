@@ -10,7 +10,8 @@ gc_user="googlebot@votca.org"
 gc_passwd="VB8kF5Sv9Dk4"
 gc_upload="./googlecode_upload.py"
 gc_project="votca"
-serverpath="thadmin@csgth:."
+server="thadmin@csgth"
+serverpath="."
 dlpath="/var/csg/downloads"
 echo="echo"
 
@@ -77,6 +78,7 @@ for tarball in "$@"; do
     $echo $gc_upload -s "$summary" -p "$gc_project" -u "$gc_user" -w "$gc_passwd" "$tarball" || die " $gc_upload failed"
     $echo sudo -u www-data cp "$tarball" "$dlpath/$name"
   else
-    $echo scp $tarball $serverpath
+    $echo scp $tarball $server:$serverpath
+    $echo ssh $server ./${0##*/} $tarball
   fi
 done
