@@ -79,6 +79,6 @@ for tarball in "$@"; do
     $echo sudo -u www-data cp "$tarball" "$dlpath/$name"
   else
     $echo scp $tarball $server:$serverpath
-    $echo ssh $server ./${0##*/} $tarball
+    $echo ssh $server ./${0##*/} -r $tarball
   fi
 done
