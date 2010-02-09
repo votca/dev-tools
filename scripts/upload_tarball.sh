@@ -69,10 +69,17 @@ shopt -s extglob
 for tarball in "$@"; do
   [ -f "$tarball" ] || die "Could not find $tarball"
   name="${tarball##*/}"
-  [[ $name =~ ^votca-(.*)-(.*).tar.gz$ ]] || die "$name does not match '^votca-(.*)-(.*).tar.gz\$'"
-  [ -z "${BASH_REMATCH[1]}" ] && die "Could not fetch package name"
-  [ -z "${BASH_REMATCH[2]}" ] && die "Could not fetch package version"
-  summary="Votca ${BASH_REMATCH[1]} - Version ${BASH_REMATCH[2]}"
+  [[ $name =~ ^votca-.*.tar.gz$ ]] || die "$name does not match '^votca-.*.tar.gz\$'"
+  if [[ $name =~ ^votca-(.*)-(.*).tar.gz$ ]]; then
+    [ -z "${BASH_REMATCH[1]}" ] && die "Could not fetch package name"
+    [ -z "${BASH_REMATCH[2]}" ] && die "Could not fetch package version"
+    summary="Votca ${BASH_REMATCH[1]} - Version ${BASH_REMATCH[2]}"
+  elif [[ $name =~ ^votca-(.*).tar.gz$ ]]; then
+    [ -z "${BASH_REMATCH[1]}" ] && die "Could not fetch package name"
+    summary="Votca ${BASH_REMATCH[1]}"
+  else
+    die "$name has a strange pattern"
+  fi
   if [ "$USER" = "thadmin" ] && [ "$HOSTNAME" = "vmcsgth" ]; then
     [ -f "$gc_upload" ] || die "Could not find $gc_upload"
     $echo $gc_upload -s "$summary" -p "$gc_project" -u "$gc_user" -w "$gc_passwd" "$tarball" || die " $gc_upload failed"
