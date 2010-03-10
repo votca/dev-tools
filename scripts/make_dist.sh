@@ -7,8 +7,8 @@ standard=" tools csg "
 build="build"
 exten=".tar.gz"
 clean="yes"
-extra_opts=""
-ccache_opt="--ccache"
+extra_opts="--without-boost"
+ccache_opt=""
 
 die () {
   echo "$*" >&2
@@ -40,7 +40,7 @@ OPTIONS:
     --exten XXX         Change tarball extension
                         Default: $exten
     --no-clean          Do not clean the tmpdir after sucess dist
-    --no-ccache         Disable ccache
+    --ccache            Disable ccache
 
 
 Examples:  ${0##*/} tools csg
@@ -75,8 +75,8 @@ while [ "${1#-}" != "$1" ]; do
   --no-clean)
     clean="no"
     shift 1;;
-  --no-ccache)
-    ccache_opt=""
+  --ccache)
+    ccache_opt="--ccache"
     shift 1;;
   *)
    die "Unknown option '$1'"
