@@ -9,6 +9,7 @@ usage="Usage: ${0##*/} file1 file2 ..."
 gc_user="googlebot@votca.org"
 gc_passwd="VB8kF5Sv9Dk4"
 gc_upload="./googlecode_upload.py"
+gc_opts="-l Featured,OpSys-Linux"
 gc_project="votca"
 server="thadmin@csgth"
 serverpath="."
@@ -82,7 +83,7 @@ for tarball in "$@"; do
   fi
   if [ "$USER" = "thadmin" ] && [ "$HOSTNAME" = "vmcsgth" ]; then
     [ -f "$gc_upload" ] || die "Could not find $gc_upload"
-    $echo $gc_upload -s "$summary" -p "$gc_project" -u "$gc_user" -w "$gc_passwd" "$tarball" || die " $gc_upload failed"
+    $echo $gc_upload $gc_opts -s "$summary" -p "$gc_project" -u "$gc_user" -w "$gc_passwd" "$tarball" || die " $gc_upload failed"
     $echo sudo -u www-data cp "$tarball" "$dlpath/$name"
   else
     $echo scp $tarball $server:$serverpath
