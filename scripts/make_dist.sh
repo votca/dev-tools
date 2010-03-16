@@ -8,6 +8,8 @@ build="build"
 exten=".tar.gz"
 clean="yes"
 extra_opts="--without-boost"
+#always keep a space
+#extra_opts=" "
 ccache_opt=""
 
 die () {
@@ -22,12 +24,12 @@ Give multiple programs to build them. Nothing means:$standard
 One can build:$all
 
 The normal sequence of a build is:
-- ./build -g --no-build prog
+- ./build --no-build prog
 - make dist
   (stop here with --notest)
 - cp tarball to a tmpdir (change with --tmpdir)
 - unpack tarball
-- ./build -g --prefix tmpdir prog
+- ./build --prefix tmpdir prog
 - rm tmpdir (disable with --no-clean)
 
 $usage
@@ -98,7 +100,7 @@ cp $build $tmpdir/src/build
 set -e
 for prog in "$@"; do
   oldpwd="$PWD"
-  ./$build --prefix $tmpdir --no-build ${extra_opts} ${ccache_opt} $prog
+  ./$build --prefix $tmpdir --no-build --conf-opts "${extra_opts}" ${ccache_opt} $prog
   cd $prog
   make dist
   tarball="$(ls *${exten})" || die "No tarball found"
@@ -108,7 +110,7 @@ for prog in "$@"; do
   cd $tmpdir/src
   tar -xzf $tarball
   mv ${tarball%${exten}} $prog
-  ./build -g --no-clean --prefix $tmpdir ${extra_opts}  ${ccache_opt} $prog
+  ./build --no-clean --prefix $tmpdir --conf-opts "${extra_opts}"  ${ccache_opt} $prog
  cd $oldpwd 
 done
 
