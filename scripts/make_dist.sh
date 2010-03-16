@@ -97,6 +97,8 @@ echo tmpdir is $tmpdir
 mkdir -p $tmpdir/src
 cp $build $tmpdir/src/build
 
+[ -n "$VOTCALDLIB" ] && unset VOTCALDLIB
+
 set -e
 for prog in "$@"; do
   oldpwd="$PWD"
