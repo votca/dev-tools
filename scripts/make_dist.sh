@@ -98,7 +98,7 @@ cp $build $tmpdir/src/build
 set -e
 for prog in "$@"; do
   oldpwd="$PWD"
-  ./$build -g --prefix $tmpdir --no-build ${extra_opts} ${ccache_opt} $prog
+  ./$build --prefix $tmpdir --no-build ${extra_opts} ${ccache_opt} $prog
   cd $prog
   make dist
   tarball="$(ls *${exten})" || die "No tarball found"
