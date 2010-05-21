@@ -87,6 +87,8 @@ for tarball in "$@"; do
     $echo sudo -u www-data cp "$tarball" "$dlpath/$name"
   else
     $echo scp $tarball $server:$serverpath
+    echo Remote: $echo $gc_upload $gc_opts -s "$summary" -p "$gc_project" -u "$gc_user" -w "$gc_passwd" "$tarball" || die " $gc_upload failed"
+    echo Remote: $echo sudo -u www-data cp "$tarball" "$dlpath/$name"
     $echo ssh $server ./${0##*/} -r $tarball
   fi
 done
