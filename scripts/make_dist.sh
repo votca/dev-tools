@@ -7,7 +7,7 @@ standard=" tools csg "
 build="build"
 exten=".tar.gz"
 clean="yes"
-extra_opts="--without-boost"
+extra_opts="--enable-votca-boost --without-expat"
 #always keep a space
 #extra_opts=" "
 ccache_opt=""
