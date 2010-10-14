@@ -85,7 +85,7 @@ for tarball in "$@"; do
     die "$name has a strange pattern"
   fi
   [ -f "$gc_upload" ] || die "Could not find $gc_upload"
-  [ "$googlebot" = "yes" ] && gc_opts="-u '$pc_opts $gc_user' -w '$gc_passwd'"
+  [ "$googlebot" = "yes" ] && gc_opts="$gc_opts -u '$gc_user' -w '$gc_passwd'"
   $echo $gc_upload $gc_opts -s "$summary" -p "$gc_project" "$tarball" \
      || die " $gc_upload failed"
 done
