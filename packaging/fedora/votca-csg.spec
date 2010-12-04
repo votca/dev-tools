@@ -9,7 +9,7 @@ Source0:	http://votca.googlecode.com/files/%{name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires:	gromacs-devel
-BuildRequires:	votca-tools-devel
+BuildRequires:	votca-tools-devel = %{version}
 Requires:	%{name}-common = %{version}-%{release}
 Requires:	%{name}-libs = %{version}-%{release}
 
@@ -35,7 +35,7 @@ This package contains libraries for the Coarse Graining Engine of VOTCA package.
 Summary:	Development headers and libraries for VOTCA Coarse Graining Engine
 Group:		Development/Libraries
 Requires:	%{name}-libs = %{version}-%{release}
-Requires:	votca-tools-devel
+Requires:	votca-tools-devel = %{version}
 
 %description devel
 This package contains development headers and libraries for the Coarse Graining
@@ -78,12 +78,12 @@ make %{?_smp_mflags}
 %install
 rm -rf %{buildroot}
 make install DESTDIR=%{buildroot}
-
-%clean
-rm -rf %{buildroot}
 # Move bash completion file to correct location
 mkdir -p %{buildroot}%{_sysconfdir}/bash_completion.d
 cp scripts/csg-completion.bash %{buildroot}%{_sysconfdir}/bash_completion.d/votca
+
+%clean
+rm -rf %{buildroot}
 
 %post libs -p /sbin/ldconfig
 %postun libs -p /sbin/ldconfig
@@ -114,7 +114,7 @@ cp scripts/csg-completion.bash %{buildroot}%{_sysconfdir}/bash_completion.d/votc
 %{_sysconfdir}/bash_completion.d/votca
 
 %changelog
-* Thu Nov 25 2010 Jussi Lehtola <jussilehtola@fedoraproject.org> - 1.0-1
-- First release.
 * Thu Nov 30 2010 Christoph Junghans <junghans@votca.org> - 1.0.1-1
 - Minor cleanup.
+* Thu Nov 25 2010 Jussi Lehtola <jussilehtola@fedoraproject.org> - 1.0-1
+- First release.

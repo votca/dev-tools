@@ -64,7 +64,7 @@ rm -rf %{buildroot}
 %{_libdir}/pkgconfig/libvotca_tools.pc
 
 %changelog
-* Thu Nov 25 2010 Jussi Lehtola <jussilehtola@fedoraproject.org> - 1.0-1
-- First release.
 * Thu Nov 30 2010 Christoph Junghans <junghans@votca.org> - 1.0.1-1
 - Minor cleanup.
+* Thu Nov 25 2010 Jussi Lehtola <jussilehtola@fedoraproject.org> - 1.0-1
+- First release.
