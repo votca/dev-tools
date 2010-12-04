@@ -11,7 +11,6 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:	gromacs-devel
 BuildRequires:	votca-tools-devel = %{version}
 Requires:	%{name}-common = %{version}-%{release}
-Requires:	%{name}-libs = %{version}-%{release}
 
 %description
 Versatile Object-oriented Toolkit for Coarse-graining Applications (VOTCA) is
