@@ -1,6 +1,14 @@
 #! /bin/bash -e
 
-url=https://doxygen.votca.googlecode.com/hg/
+# Make a crontab like this
+#
+# SHELL=/bin/bash
+# PATH=/people/thnfs/homes/junghans/bin:/usr/bin:/usr/sbin:/sbin:/bin
+# #min  hour  day  month  dow  user  command
+# */30  *     *    *      *    . $HOME/.bashrc; $HOME/votca/src/admin/scripts/update_doxygen.sh $HOME/votca/src/doxygen >~/.votca_devdoc 2>&1
+
+url="https://doxygen.votca.googlecode.com/hg/"
+burl="https://votca.googlecode.com/hg/"
 sim=75
 author="Doxygen builder <devs@votca.org>"
 msg="Documentation update"
@@ -10,10 +18,20 @@ die () {
   exit 1
 }
 
+[ -z "$1" ] && die "${0##*/}: missing argument add the path where to build the docu"
 
+[ -d "$1" ] || die "Argument is not a dir"
+cd "$1"
 
-cd $HOME/votca/src
-[ -x build ] || die "build not found"
+if [ -d buildutil ]; then
+  cd buildutil
+  hg pull $burl
+  hg update
+  cd ..
+else
+  hg clone $burl 
+fi
+
 [ -d devdoc ] || hg clone $url devdoc
 
 cd devdoc
@@ -22,7 +40,7 @@ hg update || die "hg up failed"
 rm -f *
 cd ..
 
-./build -U --devdoc tools csg || die "build of docu failed"
+./buildutil/build.sh --no-wait --dev --just-update --devdoc tools csg || die "build of docu failed"
 
 cd devdoc
 hg addremove -s $sim
