@@ -27,8 +27,8 @@ shopt -s extglob
 [ -z "${rel//[1-9].[0-9]?(_rc[1-9]?([0-9]))}" ] || die "release has the wrong form (X.X_rcX)"
 
 set -e
-[ -d "builddir" ] && die "builddir is already there, run 'rm -rf $PWD/builddir'"
-mkdir builddir
+instdir="$instdir"
+[ -d "$instdir" ] && die "$instdir is already there, run 'rm -rf $PWD/$instdir'"
 #order matters for deps
 #and pristine before non-pristine to 'overwrite less components by more components'
 for p in tools_pristine tools csg; do
@@ -43,14 +43,25 @@ for p in tools_pristine tools csg; do
 	#maybe version has not changed
 	hg commit -m "Version bumped to $rel" configure.ac || true
 	cd ..
-	./buildutil/build.sh --no-wait --no-rpath --prefix $PWD/build --$dist --clean-ignored $prog || die
+	./buildutil/build.sh --no-wait --no-rpath --prefix $PWD/$instdir --$dist --clean-ignored $prog || die
 	#we tag the release when the non-pristine version was build
 	[ -n "${p%%*_pristine}" ] && hg -R $prog tag -f "release_$rel"
 done	
-rm -rf builddir
+rm -rf $instdir
 cd buildutil
+set -x
 sed -i "s/^\(latest\)=\".*\"$/\1=\"$rel\"/" build.sh || die "sed of build.sh failed"
-hg commit -m "bumped latest to $rel" build.sh || true
+ver="$(./build.sh --version)"
+ver="${ver##*version }"
+oldver="#version $ver"
+last="${ver:0-1:1}"
+[ -z "${last//[0-9]}" ] || die "Could grep minor version build - got $last"
+((last++))
+ver=${ver:0:${#ver}-1}
+ver="#version $ver$last -- $(date +%d.%m.%g) bumped latest to $rel"
+sed -i "/^$oldver/a $ver" build.sh
+hg commit -m "$(./build.sh --hg)" build.sh || true
+cd ..
 
 echo "####### TODO by you #########"
 echo cd $PWD
