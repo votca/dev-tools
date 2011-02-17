@@ -30,7 +30,7 @@ set -e
 [ -d "builddir" ] && die "builddir is already there, run 'rm -rf $PWD/builddir'"
 mkdir builddir
 #order matters for deps
-#and pristine before not pristine to overwrite less files by more files
+#and pristine before non-pristine to 'overwrite less components by more components'
 for p in tools_pristine tools csg; do
 	[ -z "${p%%*_pristine}" ] && dist="dist-pristine" || dist="dist"
 	prog="${p%_pristine}"
@@ -44,7 +44,8 @@ for p in tools_pristine tools csg; do
 	hg commit -m "Version bumped to $rel" configure.ac || true
 	cd ..
 	./buildutil/build.sh --no-wait --no-rpath --prefix $PWD/build --$dist --clean-ignored $prog || die
-	hg -R $prog tag -f "release_$rel"
+	#we tag the release when the non-pristine version was build
+	[ -n "${p%%*_pristine}" ] && hg -R $prog tag -f "release_$rel"
 done	
 rm -rf builddir
 cd buildutil
