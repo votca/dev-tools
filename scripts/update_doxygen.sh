@@ -29,7 +29,7 @@ if [ -d buildutil ]; then
   hg update
   cd ..
 else
-  hg clone $burl 
+  hg clone $burl buildutil 
 fi
 
 [ -d devdoc ] || hg clone $url devdoc
