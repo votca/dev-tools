@@ -49,7 +49,6 @@ for p in tools_pristine tools csg; do
 done	
 rm -rf $instdir
 cd buildutil
-set -x
 sed -i "s/^\(latest\)=\".*\"$/\1=\"$rel\"/" build.sh || die "sed of build.sh failed"
 ver="$(./build.sh --version)"
 ver="${ver##*version }"
