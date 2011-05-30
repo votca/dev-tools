@@ -39,9 +39,16 @@ for p in tools_pristine tools csg; do
 	[ -z "$(hg status -mu)" ] || die "There are modified or unknown files in $p"
 	hg checkout stable || die "Could not checkout stable"
 	[ -z "$(hg status -mu)" ] || die "There are modified or unknown files in $p"
-	sed -i "/AC_INIT/s/,[^,]*,\(bugs@votca.org\)/,$rel,\1/" configure.ac || die "sed of configure.ac failed"
-	#maybe version has not changed
-	hg commit -m "Version bumped to $rel" configure.ac || true
+	#autotools to be removed soon
+	if [ -f configure.ac ]; then
+	  sed -i "/AC_INIT/s/,[^,]*,\(bugs@votca.org\)/,$rel,\1/" configure.ac || die "sed of configure.ac failed"
+	  #|| true because maybe version has not changed
+	  hg commit -m "Version bumped to $rel" configure.ac || true
+	else
+	  sed -i "/set(PROJECT_VERSION/s/\"[^\"]*\"/\"$rel\"/" CMakeLists.txt || die "sed of CMakeLists.txt failed"
+	  #|| true because maybe version has not changed
+	  hg commit -m "Version bumped to $rel" CMakeLists.txt || true
+	fi
 	cd ..
 	./buildutil/build.sh --no-wait --no-rpath --prefix $PWD/$instdir --$dist --clean-ignored $prog || die
 	#we tag the release when the non-pristine version was build
