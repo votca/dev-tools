@@ -34,7 +34,7 @@ instdir="$instdir"
 [[ -d $instdir ]] && die "$instdir is already there, run 'rm -rf $PWD/$instdir'"
 #order matters for deps
 #and pristine before non-pristine to 'overwrite less components by more components'
-for p in tools_pristine tools csg; do
+for p in tools_pristine tools csg manual; do
 	[[ -z ${p%%*_pristine} ]] && dist="dist-pristine" || dist="dist"
 	prog="${p%_pristine}"
 	./buildutil/build.sh --no-wait --just-update $prog || die "build -U failed" #clone and checkout
@@ -42,8 +42,10 @@ for p in tools_pristine tools csg; do
 	[[ -z "$(hg status -mu)" ]] || die "There are modified or unknown files in $p"
 	hg checkout $stable || die "Could not checkout $stable"
 	[[ -z "$(hg status -mu)" ]] || die "There are modified or unknown files in $p"
-	if [[ $stable = "stable" ]]; then
+	if [[ $stable != "stable" ]]; then
           :
+	elif [[ $p = "manual" ]]; then
+	  :
 	#autotools to be removed soon
 	elif [[ -f configure.ac ]]; then
 	  sed -i "/AC_INIT/s/,[^,]*,\(bugs@votca.org\)/,$rel,\1/" configure.ac || die "sed of configure.ac failed"
@@ -55,9 +57,14 @@ for p in tools_pristine tools csg; do
 	  hg commit -m "Version bumped to $rel" CMakeLists.txt || true
 	fi
 	cd ..
-	./buildutil/build.sh --no-wait --no-rpath --prefix $PWD/$instdir --$dist --clean-ignored $prog || die
+	if [[ $p = "manual" ]]; then
+	  ./buildutil/build.sh --no-wait --prefix $PWD/$instdir --clean-ignored $prog || die
+	  cp manual/manual.pdf votca-manual-$rel.pdf || die
+	else
+	  ./buildutil/build.sh --no-wait --prefix $PWD/$instdir --$dist --clean-ignored $prog || die
+	fi
 	#we tag the release when the non-pristine version was build
-	[[ -n ${p%%*_pristine} ]] && hg -R $prog tag -f "release_$rel"
+	[[ $stable = "stable" && -n ${p%%*_pristine} ]] && hg -R $prog tag -f "release_$rel"
 done	
 rm -rf $instdir
 cd buildutil
@@ -80,8 +87,11 @@ cd ..
 if [[ $stable = "stable" ]]; then
   echo "####### TODO by you #########"
   echo cd $PWD
-  for p in tools csg buildutil; do
+  for p in tools csg buildutil manual; do
   	echo hg push -R $p
   done
-  echo "upload_tarball" *$rel*
+  echo "uploads tarball" *$rel* *.pdf
+else
+  echo cd $PWD
+  echo "Take a look at" *$rel* *.pdf
 fi
