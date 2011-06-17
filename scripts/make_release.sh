@@ -56,7 +56,7 @@ for p in tools_pristine $what; do
 	  hg commit -m "Version bumped to $rel" CMakeLists.txt || true
 	fi
 	cd ..
-	./buildutil/build.sh --no-wait --prefix $PWD/$instdir --$dist --clean-ignored $prog || die
+	REL="$rel" ./buildutil/build.sh --no-wait --prefix $PWD/$instdir --$dist --clean-ignored $prog || die
 	#we tag the release when the non-pristine version was build
 	[[ $stable = "stable" && -n ${p%%*_pristine} ]] && hg -R $prog tag -f "release_$rel"
 done	
