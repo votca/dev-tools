@@ -33,7 +33,7 @@ fi
 
 rel="$1"
 shopt -s extglob
-[[ $stable = "stable" && ${rel} = [1-9].[0-9]?(.[1-9]|_rc[1-9])?(_pristine) ]] || die "release has the wrong form"
+[[ $stable = "stable" && ${rel} != [1-9].[0-9]?(.[1-9]|_rc[1-9])?(_pristine) ]] && die "release has the wrong form"
 
 set -e
 instdir="instdir"
