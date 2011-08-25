@@ -10,8 +10,9 @@
 usage="Usage: ${0##*/} file1 file2 ..."
 gc_upload="./googlecode_upload.pl"
 gc_project="votca"
-echo="echo"
-labels="Featured,OpSys-Linux"
+doit="no"
+opts='--labels="Featured,OpSys-Linux"'
+rel=""
 
 die () {
   echo -e "$*" >&2
@@ -24,6 +25,8 @@ show_help () {
 $usage
 OPTIONS:
 -r, --really        Really do everything
+    --relname NAME  Release name
+    --user NAME     Googlecode username
 -h, --help          Show this help
 -v, --version       Show version
     --hg            Show last log message for hg (or cvs)
@@ -46,8 +49,14 @@ while [ "${1#-}" != "$1" ]; do
  fi
  case $1 in 
    -r | --really)
-    echo=""
+    doit="yes"
     shift ;;
+   --user)
+    user="$2"
+    shift 2;;
+   --relname)
+    rel="$2"
+    shift 2;;
    -h | --help)
     show_help
     exit 0;;
@@ -62,23 +71,41 @@ while [ "${1#-}" != "$1" ]; do
  esac
 done
 
-[ -z "$1" ] && die "Missing argument"
+[[ -f $gc_upload ]] || die "Could not find $gc_upload"
+[[ -z $user ]] && die "Please specify a user for the upload (--user option)"
+opts="--user=\"$user\" $opts"
+[[ -z $1 ]] && die "Missing argument"
+if [[ -z $GOOGLECODE_PASS ]]; then
+  [[ $doit = "no" ]] && echo "No password in GOOGLECODE_PASS variable found, so I will ask you if --really was specified."
+  if [[ $doit = "yes" ]]; then
+    echo "Please type in the password for user $user (or let $gc_upload ask you several times)"
+    read -r pass || die "Read of password failed"
+    [[ -n $pass ]] && opts="--pass=\"$pass\" $opts"
+  fi
+fi
 shopt -s extglob
 for tarball in "$@"; do
   [ -f "$tarball" ] || die "Could not find $tarball"
   name="${tarball##*/}"
-  [[ $name =~ ^votca-.*.tar.gz$ ]] || die "$name does not match '^votca-.*.tar.gz\$'"
   if [[ $name =~ ^votca-(.*)-(.*).(tar.gz|pdf)$ ]]; then
     [ -z "${BASH_REMATCH[1]}" ] && die "Could not fetch package name"
     [ -z "${BASH_REMATCH[2]}" ] && die "Could not fetch package version"
-    summary="Votca ${BASH_REMATCH[1]} - Version ${BASH_REMATCH[2]}"
-  #elif [[ $name =~ ^votca-(.*).tar.gz$ ]]; then
-  #  [ -z "${BASH_REMATCH[1]}" ] && die "Could not fetch package name"
-  #  summary="Votca ${BASH_REMATCH[1]}"
+    if [[ ${BASH_REMATCH[2]} = *_pristine ]]; then
+     ver="${BASH_REMATCH[2]%%_pristine}"
+     extra=" without bundled libs"
+    else
+      ver="${BASH_REMATCH[2]}"
+      extra=""
+    fi
+    [[ -n $rel ]] && extra=" ($rel)${extra}"
+    summary="Votca ${BASH_REMATCH[1]} - Version ${ver}${extra}"
   else
     die "$name has a strange pattern"
   fi
-  [ -f "$gc_upload" ] || die "Could not find $gc_upload"
-  $echo $gc_upload --labels="$labels" --summary="$summary" -project="$gc_project" "$tarball" \
-     || die " $gc_upload failed"
+  if [[ $doit = "yes" ]]; then
+    $gc_upload $opts --summary="$summary" --project="$gc_project" --file="$tarball" || \
+     die " $gc_upload failed"
+  else
+    echo "$gc_upload --summary='$summary' --project='$gc_project' --file='$tarball'"
+   fi
 done
