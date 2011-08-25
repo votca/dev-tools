@@ -8,10 +8,10 @@
 #version 0.1.5 31.10.10 -- removed googlebot stuff
 
 usage="Usage: ${0##*/} file1 file2 ..."
-gc_upload="./googlecode_upload.py"
-gc_opts="-l Featured,OpSys-Linux"
+gc_upload="./googlecode_upload.pl"
 gc_project="votca"
 echo="echo"
+labels="Featured,OpSys-Linux"
 
 die () {
   echo -e "$*" >&2
@@ -68,17 +68,17 @@ for tarball in "$@"; do
   [ -f "$tarball" ] || die "Could not find $tarball"
   name="${tarball##*/}"
   [[ $name =~ ^votca-.*.tar.gz$ ]] || die "$name does not match '^votca-.*.tar.gz\$'"
-  if [[ $name =~ ^votca-(.*)-(.*).tar.gz$ ]]; then
+  if [[ $name =~ ^votca-(.*)-(.*).(tar.gz|pdf)$ ]]; then
     [ -z "${BASH_REMATCH[1]}" ] && die "Could not fetch package name"
     [ -z "${BASH_REMATCH[2]}" ] && die "Could not fetch package version"
     summary="Votca ${BASH_REMATCH[1]} - Version ${BASH_REMATCH[2]}"
-  elif [[ $name =~ ^votca-(.*).tar.gz$ ]]; then
-    [ -z "${BASH_REMATCH[1]}" ] && die "Could not fetch package name"
-    summary="Votca ${BASH_REMATCH[1]}"
+  #elif [[ $name =~ ^votca-(.*).tar.gz$ ]]; then
+  #  [ -z "${BASH_REMATCH[1]}" ] && die "Could not fetch package name"
+  #  summary="Votca ${BASH_REMATCH[1]}"
   else
     die "$name has a strange pattern"
   fi
   [ -f "$gc_upload" ] || die "Could not find $gc_upload"
-  $echo $gc_upload $gc_opts -s "$summary" -p "$gc_project" "$tarball" \
+  $echo $gc_upload --labels="$labels" --summary="$summary" -project="$gc_project" "$tarball" \
      || die " $gc_upload failed"
 done
