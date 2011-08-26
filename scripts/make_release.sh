@@ -38,7 +38,8 @@ shopt -s extglob
 set -e
 instdir="instdir"
 build="build"
-what="tools csg csgapps manual tutorials"
+#build manual before csgapps to avoid csgapps in the manual
+what="tools csg manual csgapps tutorials"
 [[ -d $instdir ]] && die "Test install dir '$instdir' is already there, run 'rm -rf $PWD/$instdir'"
 #order matters for deps
 #and pristine before non-pristine to 'overwrite less components by more components'
