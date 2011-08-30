@@ -108,8 +108,8 @@ cd ..
 if [[ $stable = "stable" ]]; then
   echo "####### TODO by you #########"
   echo cd $PWD
-  echo "for p in $what; do hg out -p -R \$p; done"
-  echo "for p in $what; do hg push -R \$p; done"
+  echo "for p in $what buildutil; do hg out -p -R \$p; done"
+  echo "for p in $what buildutil; do hg push -R \$p; done"
   echo "uploads tarball" *$rel* *.pdf
 else
   echo cd $PWD
