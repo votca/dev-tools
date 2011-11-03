@@ -40,7 +40,7 @@ hg update || die "hg up failed"
 rm -f *
 cd ..
 
-./buildutil/build.sh --no-wait --dev --just-update --devdoc tools csg || die "build of docu failed"
+./buildutil/build.sh --no-wait --dev --just-update --devdoc tools csg moo kmc ctp || die "build of docu failed"
 
 cd devdoc
 hg addremove -s $sim
