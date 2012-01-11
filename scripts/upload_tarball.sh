@@ -11,7 +11,7 @@ usage="Usage: ${0##*/} file1 file2 ..."
 gc_upload="./googlecode_upload.pl"
 gc_project="votca"
 doit="no"
-opts='--labels="Featured,OpSys-Linux"'
+opts='--labels=Featured,OpSys-Linux'
 rel=""
 
 die () {
@@ -106,6 +106,6 @@ for tarball in "$@"; do
     $gc_upload $opts --summary="$summary" --project="$gc_project" --file="$tarball" || \
      die " $gc_upload failed"
   else
-    echo "$gc_upload --summary='$summary' --project='$gc_project' --file='$tarball'"
+    echo "$gc_upload $opts --summary='$summary' --project='$gc_project' --file='$tarball'"
    fi
 done

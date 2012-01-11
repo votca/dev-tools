@@ -112,8 +112,8 @@ if [[ $testing = "no" ]]; then
   echo cd $PWD
   echo "for p in $what buildutil; do hg out -p -R \$p; done"
   echo "for p in $what buildutil; do hg push -R \$p; done"
-  echo "uploads tarball" *$rel* *.pdf
+  echo "uploads tarball" *$rel*
 else
   echo cd $PWD
-  echo "Take a look at" *$rel* *.pdf
+  echo "Take a look at" *$rel*
 fi
