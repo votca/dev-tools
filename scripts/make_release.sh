@@ -29,7 +29,7 @@ if [[ -d buildutil ]]; then
   hg update
   cd ..
 else
-  hg clone $burl buildutil 
+  hg clone $burl buildutil
 fi
 
 rel="$1"
@@ -45,33 +45,47 @@ what="tools csg csg-manual csgapps csg-tutorials"
 #order matters for deps
 #and pristine before non-pristine to 'overwrite less components by more components'
 for p in tools_pristine $what; do
-	[[ -z ${p%%*_pristine} ]] && dist="dist-pristine" || dist="dist"
-	prog="${p%_pristine}"
-	./buildutil/build.sh --no-wait --just-update --prefix $PWD/$instdir $prog || die "build -U failed" #clone and checkout
-	cd $prog
-	[[ -z "$(hg status -mu)" ]] || die "There are modified or unknown files in $p"
-	hg checkout $branch || die "Could not checkout $branch"
-	[[ -z "$(hg status -mu)" ]] || die "There are modified or unknown files in $p"
-	if [[ $testing = "yes" ]]; then
-          :
-	elif [[ $p = *manual ]]; then
-	  sed -i "s/^VER=.*$/VER=$rel/" Makefile || die "sed of Makefile failed"
-	elif [[ -f CMakeLists.txt ]]; then
-	  sed -i "/set(PROJECT_VERSION/s/\"[^\"]*\"/\"$rel\"/" CMakeLists.txt || die "sed of CMakeLists.txt failed"
-	fi
-	if [[ $testing = "no" ]]; then
-	  #remove old tags
-	  if [[ -f .hgtags ]]; then
-	    sed -i "/release_${rel}$/d" .hgtags
-	  fi
-	  #|| true because maybe version has not changed
-	  hg commit -m "Version bumped to $rel" || true
-	fi
-	cd ..
-	REL="$rel" ./buildutil/build.sh --no-wait --prefix $PWD/$instdir --$dist --clean-ignored $prog || die
-	#we tag the release when the non-pristine version was build
-	[[ $testing = "no" && -n ${p%%*_pristine} ]] && hg -R $prog tag "release_$rel"
-done	
+  [[ -z ${p%%*_pristine} ]] && dist="dist-pristine" || dist="dist"
+  prog="${p%_pristine}"
+  ./buildutil/build.sh \
+    --no-branchcheck --no-wait --just-update --prefix $PWD/$instdir $prog || \
+    die "build -U failed" #clone and checkout
+  cd $prog
+  [[ -z "$(hg status -mu)" ]] || die "There are modified or unknown files in $p"
+  hg checkout $branch || die "Could not checkout $branch"
+  [[ -z "$(hg status -mu)" ]] || die "There are modified or unknown files in $p"
+  if [[ $testing = "yes" ]]; then
+    :
+  elif [[ $p = *manual ]]; then
+    sed -i "s/^VER=.*$/VER=$rel/" Makefile || die "sed of Makefile failed"
+  elif [[ -f CMakeLists.txt ]]; then
+    sed -i "/set(PROJECT_VERSION/s/\"[^\"]*\"/\"$rel\"/" CMakeLists.txt || die "sed of CMakeLists.txt failed"
+  fi
+  if [[ $testing = "no" ]]; then
+    #remove old tags
+    if [[ -f .hgtags ]]; then
+      sed -i "/release_${rel}$/d" .hgtags
+    fi
+    #|| true because maybe version has not changed
+    hg commit -m "Version bumped to $rel" || true
+  fi
+  cd ..
+
+  if [[ $testing = "yes" ]]; then
+    REL="$rel" ./buildutil/build.sh \
+      --no-branchcheck --no-changelogcheck \
+      --no-wait --prefix $PWD/$instdir \
+      --$dist --clean-ignored \
+      $prog || die
+  else
+    REL="$rel" ./buildutil/build.sh \
+      --no-wait --prefix $PWD/$instdir \
+      --$dist --clean-ignored \
+      $prog || die
+    #tag the release when the non-pristine version was build
+    [[ -n ${p%%*_pristine} ]] && hg -R $prog tag "release_$rel"
+  fi
+done
 rm -rf $instdir
 mkdir $instdir
 [ -d $build ] && die "$build is already there, run 'rm -rf $PWD/$build'"
@@ -82,7 +96,7 @@ for p in tools_pristine $what; do
   [[ $prog = *manual ]] && continue
   [[ -z ${p%%*_pristine} ]] && r="${rel}_pristine" || r="$rel"
   [[ -z ${p%%*_pristine} ]] && opts="-DEXTERNAL_BOOST=ON" || opts="-DEXTERNAL_BOOST=OFF"
-  cp ../votca-$prog-$r.tar.gz . 
+  cp ../votca-$prog-$r.tar.gz .
   ../buildutil/build.sh --no-wait --prefix $PWD/../$instdir --release $r $opts --selfdownload $prog
   rm -rf *
 done
