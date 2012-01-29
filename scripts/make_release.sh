@@ -90,23 +90,6 @@ cd ..
 rm -rf $build
 rm -rf $instdir
 
-cd buildutil
-if [[ $testing = "no" ]]; then
-  sed -i "s/^\(latest\)=\".*\"$/\1=\"$rel\"/" build.sh || die "sed of build.sh failed"
-  ver="$(./build.sh --version)"
-  ver="${ver##*version }"
-  oldver="#version $ver"
-  last="${ver:0-1:1}"
-  [ -z "${last//[0-9]}" ] || die "Could grep minor version build - got $last"
-  ((last++))
-  ver=${ver:0:${#ver}-1}
-  ver="#version $ver$last -- $(date +%d.%m.%g) bumped latest to $rel"
-  sed -i "/^$oldver/a $ver" build.sh
-  #|| true because maybe version has not changed
-  hg commit -m "$(./build.sh --hg)" build.sh || true
-fi
-cd ..
-
 if [[ $testing = "no" ]]; then
   echo "####### TODO by you #########"
   echo cd $PWD
