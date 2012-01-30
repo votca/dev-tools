@@ -34,7 +34,7 @@ fi
 
 rel="$1"
 shopt -s extglob
-[[ $testing = "yes" && ${rel} != [1-9].[0-9]?(.[1-9]|_rc[1-9])?(_pristine) ]] && die "release has the wrong form"
+[[ $testing = "no" && ${rel} != [1-9].[0-9]?(.[1-9]|_rc[1-9])?(_pristine) ]] && die "release has the wrong form"
 
 set -e
 instdir="instdir"
@@ -42,6 +42,7 @@ build="build"
 #build manual before csgapps to avoid csgapps in the manual
 what="tools csg csg-manual csgapps csg-tutorials"
 [[ -d $instdir ]] && die "Test install dir '$instdir' is already there, run 'rm -rf $PWD/$instdir'"
+[[ -d $build ]] && die "$build is already there, run 'rm -rf $PWD/$build'"
 #order matters for deps
 #and pristine before non-pristine to 'overwrite less components by more components'
 for p in tools_pristine $what; do
@@ -91,13 +92,37 @@ mkdir $instdir
 [ -d $build ] && die "$build is already there, run 'rm -rf $PWD/$build'"
 mkdir $build
 cd $build
-for p in tools_pristine $what; do
-  prog="${p%_pristine}"
-  [[ $prog = *manual ]] && continue
-  [[ -z ${p%%*_pristine} ]] && r="${rel}_pristine" || r="$rel"
-  [[ -z ${p%%*_pristine} ]] && opts="-DEXTERNAL_BOOST=ON" || opts="-DEXTERNAL_BOOST=OFF"
-  cp ../votca-$prog-$r.tar.gz .
-  ../buildutil/build.sh --no-wait --prefix $PWD/../$instdir --release $r $opts --selfdownload $prog
+
+echo "Starting build check from tarball"
+
+r=""
+for i in ../votca-tools-$rel*_pristine.tar.gz; do
+  [[ -f $i ]] || die "Could not find $i"
+  [[ -n $r ]] && die "There are two file matching votca-tools-$rel*_pristine.tar.gz"
+  cp $i .
+  [[ $i =~ ../votca-tools-(.*_pristine).tar.gz ]] && r="${BASH_REMATCH[1]}"
+done
+[[ -z $r ]] && die "Could not fetch rel"
+../buildutil/build.sh \
+  --no-wait --prefix $PWD/../$instdir --no-relcheck --release $r \
+  -DEXTERNAL_BOOST=ON --selfdownload tools
+rm -rf *
+
+for p in $what; do
+  [[ $p = *pristine ]] && die "Edit ${0##*/} as there are multiple pristine tarballs"
+  [[ $p = *manual ]] && continue
+  r=""
+  for i in ../votca-$p-$rel*.tar.gz; do
+    [[ $i = *_pristine* ]] && continue
+    [[ -f $i ]] || die "Could not find $i"
+    [[ -n $r ]] && die "There are two non-pristine file matching votca-$p-$rel*.tar.gz"
+    cp $i .
+    [[ $i =~ ../votca-$p-(.*).tar.gz ]] && r="${BASH_REMATCH[1]}"
+  done
+  [[ -z $r ]] && die "Could not fetch rel"
+  ../buildutil/build.sh \
+    --no-wait --prefix $PWD/../$instdir --no-relcheck --release $r \
+    -DEXTERNAL_BOOST=OFF --selfdownload $p
   rm -rf *
 done
 cd ..
