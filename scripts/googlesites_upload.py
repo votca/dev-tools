@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: iso-8859-1 -*-
 #
 # Copyright 2009 Google Inc. All Rights Reserved.
