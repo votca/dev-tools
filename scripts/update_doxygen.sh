@@ -7,8 +7,8 @@
 # #min  hour  day  month  dow  user  command
 # */30  *     *    *      *    . $HOME/.bashrc; $HOME/votca/src/admin/scripts/update_doxygen.sh $HOME/votca/src/doxygen >~/.votca_devdoc 2>&1
 
-url="https://doxygen.votca.googlecode.com/hg/"
-burl="https://votca.googlecode.com/hg/"
+url="https://code.google.com/p/votca.doxygen/"
+burl="https:/code.google.com/p/votca/"
 sim=75
 author="Doxygen builder <devs@votca.org>"
 msg="Documentation update"
