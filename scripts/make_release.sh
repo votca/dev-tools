@@ -4,7 +4,7 @@
 #- allow $what to be more flexible
 
 
-burl="https:/code.google.com/p/votca/"
+burl="https://code.google.com/p/votca/"
 branch=stable
 testing=no
 
