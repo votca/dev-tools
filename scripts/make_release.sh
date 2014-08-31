@@ -180,7 +180,10 @@ rm -rf *
 
 for p in $what; do
   [[ $p = *pristine ]] && die "Edit ${0##*/} as there are multiple pristine tarballs"
-  [[ $p = *manual ]] && continue
+  if [[ $p = *manual ]]; then
+    [[ $testing = "yes" ]] || cp votca-$p-${rel}.pdf ../downloads
+    continue
+  fi
   r=""
   for i in ../votca-$p-$rel*.tar.gz; do
     [[ $i = *_pristine* ]] && continue
