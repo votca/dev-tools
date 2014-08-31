@@ -202,7 +202,7 @@ rm -rf $instdir
 
 if [[ $testing = "no" ]]; then
   cd downloads
-  hg add votca-*-${rel}*.tar.gz
+  hg add votca-*-${rel}*
   hg commit -m "Added files from release $rel"
   cd ..
   echo "####### TODO by you #########"
