@@ -1,11 +1,35 @@
-#!/bin/bash
+#!/bin/bash -e
 
+# Make a crontab like this
+#
+# SHELL=/bin/bash
+# PATH=/people/thnfs/homes/junghans/bin:/usr/bin:/usr/sbin:/sbin:/bin
+# #min  hour  day  month  dow  user  command
+# 15,45  *     *    *      *    . $HOME/.bashrc; $HOME/votca/src/admin/hg2git/hg2git.sh $HOME/votca/src/hg2git.sh >~/.votca_hg2git 2>&1
+
+# before enabling --push, so something like
+# git remote add origin git@github.com:votca/csgapps.git
 die() {
   echo "$@" >&2
   exit 1
 }
 
-[[ -z $(type -p hg-fast-export) ]] && die "Could not find hg-fast-export"
+push=no
+clean=no
+
+[[ $1 = --help ]] && echo "${0##*/} [--push] [--clean] DIR"
+[[ $1 = --push ]] && push="yes" && shift
+[[ $1 = --clean ]] && clean="yes" && shift
+[[ -n $1 ]] || die "Missing dir"
+[[ -d $1 ]] || die "Argument is not a dir"
+
+authors="${VOTCA_AUTHORS:=${0%/*}/authors}"
+authors=$(realpath $authors)
+[[ -f $authors ]] || die "Could find authors file"
+
+hg_fast_export=$(type -p hg-fast-export) || die "Could not find hg-fast-export"
+
+cd "$1"
 
 cfiles="config/libtool.m4 config/ltmain.sh netbeans/csg_reupdate/dist/Debug/GNU-Linux-x86/csg_reupdate src/libcsg/libcsg.a src/tools/csg_reupdate"
 
@@ -38,21 +62,20 @@ git_big_files(){
   IFS="$old_IFS"
 }
 
-authors="${VOTCA_AUTHORS:=${0%/*}/authors}"
-authors=$(realpath $authors)
-[[ -f $authors ]] || die "Could find authors file"
-for i in tools csg; do
+for i in tools csg csg-manual csgapps csg-tutorials; do
   hg="${i}.hg"
   git="${i}.git"
   [[ -d $hg ]] || hg clone "https://code.google.com/p/votca.$i/" "$hg"
   hg pull -R "$hg" -u
   [[ -d $git ]] || git init "$git"
   pushd $git
-  hg-fast-export -r ../$hg -A "$authors"
-  git gc --aggressive --prune=all
+  $hg_fast_export -r ../$hg -A "$authors"
+  [[ $clean = no ]] || git gc --aggressive --prune=all
   git log | grep "^Author:" | sort -u > ../${git}.authors
   git_big_files > ../${git}.big_files
+  [[ $push = no ]] || git push --all
   popd
+  [[ $clean = yes ]] || continue
   git2=${i}.clean.git
   [[ -d $git2 ]] && rm -rf $git2
   git clone $git $git2
