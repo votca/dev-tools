@@ -5,7 +5,7 @@
 # SHELL=/bin/bash
 # PATH=/people/thnfs/homes/junghans/bin:/usr/bin:/usr/sbin:/sbin:/bin
 # #min  hour  day  month  dow  user  command
-# 15,45  *     *    *      *    . $HOME/.bashrc; $HOME/votca/src/admin/hg2git/hg2git.sh $HOME/votca/src/hg2git.sh >~/.votca_hg2git 2>&1
+# 15,45  *     *    *      *    . $HOME/.bashrc; $HOME/votca/src/admin/hg2git/hg2git.sh --push $HOME/votca/src/hg2git >~/.votca_hg2git 2>&1
 
 # before enabling --push, so something like
 # git remote add origin git@github.com:votca/csgapps.git
