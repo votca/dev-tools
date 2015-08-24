@@ -84,12 +84,15 @@ for i in *.hg; do
     git push --all
     git push --tags
   fi
+  branches=$(git branch | sed 's/\*//')
   popd
   [[ $clean = yes ]] || continue
   git2=${i}.cgit
   [[ -d $git2 ]] && rm -rf $git2
   git clone $git $git2
   pushd $git2
+  echo "$branches" | xargs -n 1 git checkout
+  git checkout master
   [[ -n $cfiles ]] && git filter-branch --index-filter "git rm --cached --ignore-unmatch $cfiles" -- --all
   [[ -z $(git for-each-ref --format="%(refname)" refs/original/) ]] || \
     git for-each-ref --format="%(refname)" refs/original/ | xargs -n 1 git update-ref -d
