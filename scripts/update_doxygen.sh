@@ -7,10 +7,8 @@
 # #min  hour  day  month  dow  user  command
 # */30  *     *    *      *    . $HOME/.bashrc; $HOME/votca/src/admin/scripts/update_doxygen.sh $HOME/votca/src/doxygen >~/.votca_devdoc 2>&1
 
-url="https://code.google.com/p/votca.doxygen/"
-burl="https://code.google.com/p/votca/"
-sim=75
-author="Doxygen builder <devs@votca.org>"
+url="git@github.com:votca/doxygen.git"
+burl="git@github.com:votca/buildutil.git"
 msg="Documentation update"
 
 [ "${FLOCKER}" != "$0" ] && exec env FLOCKER="$0" flock -en "$0" "$0" "$@" || true
@@ -27,24 +25,25 @@ cd "$1"
 
 if [ -d buildutil ]; then
   cd buildutil
-  hg pull $burl
-  hg update
+  git pull --ff-only "$burl" master
   cd ..
 else
-  hg clone $burl buildutil 
+  git clone $burl buildutil 
 fi
 
-[ -d devdoc ] || hg clone $url devdoc
+[ -d devdoc ] || git clone --depth 1 --single-branch -b gh-pages $url devdoc
 
 cd devdoc
-hg pull || die "hg pull failed"
-hg update || die "hg up failed"
+git checkout gh-pages
+git config user.name "Doxygen builder"
+git config user.email "devs@votca.org"
+git pull --ff-only "$url" gh-pages || die "git pull failed"
 rm -f *
 cd ..
 
 ./buildutil/build.sh --no-wait --dev --just-update --devdoc tools csg ctp moo kmc || die "build of docu failed"
 
 cd devdoc
-hg addremove -s $sim
-hg commit -u "$author" -m "$msg" && hg push $url
+git add --all
+git commit -m "$msg" && git push $url
 
