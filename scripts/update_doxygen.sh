@@ -8,7 +8,7 @@
 # */30  *     *    *      *    . $HOME/.bashrc; $HOME/votca/src/admin/scripts/update_doxygen.sh $HOME/votca/src/doxygen >~/.votca_devdoc 2>&1
 
 url="git@github.com:votca/doxygen.git"
-burl="git@github.com:votca/buildutil.git"
+burl="git://github.com/votca/buildutil.git"
 msg="Documentation update"
 
 [ "${FLOCKER}" != "$0" ] && exec env FLOCKER="$0" flock -en "$0" "$0" "$@" || true
@@ -38,12 +38,12 @@ git checkout gh-pages
 git config user.name "Doxygen builder"
 git config user.email "devs@votca.org"
 git pull --ff-only "$url" gh-pages || die "git pull failed"
-rm -f *
+rm -f * #sometimes files disappear
 cd ..
 
 ./buildutil/build.sh --no-wait --dev --just-update --devdoc tools csg ctp moo kmc || die "build of docu failed"
 
 cd devdoc
 git add --all
-git commit -m "$msg" && git push $url
+git commit -m "$msg" && git push $url gh-pages:gh-pages
 
