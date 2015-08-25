@@ -4,11 +4,13 @@
 #- allow $what to be more flexible
 
 
-burl="https://code.google.com/p/votca/"
-durl="https://code.google.com/p/votca.downloads/"
+burl="git@github.com:votca/buildutil.git"
+durl="git@github.com:votca/downloads.git"
 branch=stable
 testing=no
 clean=no
+#build manual before csgapps to avoid csgapps in the manual
+what="tools csg csg-manual csgapps csg-tutorials"
 cmake_opts=()
 usage="Usage: ${0##*/} [OPTIONS] rel_version builddir"
 
@@ -27,6 +29,7 @@ OPTIONS:
     --help          Show this help
     --test BRANCH   Build test release from branch BRANCH (use with current rel ver)
     --clean         Clean tmp dirs  (SUPER DANGEROUS)
+    --repos REL     Use repos instead of '$what'
 -D*                 Extra option to give to cmake 
 
 Examples:  ${0##*/} -q
@@ -51,6 +54,9 @@ while [[ $# -gt 0 ]]; do
    --clean)
      clean=yes
      shift;;
+   --repos)
+     what="$2"
+     shift 2;;
    --test)
      branch="$2"
      testing=yes
@@ -77,22 +83,20 @@ cd "$2"
 
 if [[ -d buildutil ]]; then
   cd buildutil
-  hg pull "$burl"
-  [[ -z "$(hg status -mu)" ]] || die "There are modified or unknown files in buildutil"
-  hg update
+  git pull --ff-only "$burl" master
+  [[ -z "$(git ls-files -mo --exclude-standard)" ]] || die "There are modified or unknown files in buildutil"
   cd ..
 else
-  hg clone $burl buildutil
+  git clone $burl buildutil
 fi
 
 if [[ -d downloads ]]; then
   cd downloads
-  hg pull "$durl"
-  [[ -z "$(hg status -mu)" ]] || die "There are modified or unknown files in downloads"
-  hg update
+  git pull --ff-only "$durl"
+  [[ -z "$(git ls-files -mo --exclude-standard)" ]] || die "There are modified or unknown files in downloads"
   cd ..
 else
-  hg clone $durl downloads
+  git clone $durl downloads
 fi
 
 rel="$1"
@@ -102,8 +106,6 @@ shopt -s extglob
 set -e
 instdir="instdir"
 build="build"
-#build manual before csgapps to avoid csgapps in the manual
-what="tools csg csg-manual csgapps csg-tutorials"
 if [[ -d $instdir ]]; then
   [[ $clean = yes ]] || die "Test install dir '$instdir' is already there, run 'rm -rf $PWD/$instdir' or add --clean"
   rm -vrf $PWD/$instdir
@@ -121,32 +123,30 @@ for p in ${tools_pristine} $what; do
   [[ -z ${p%%*_pristine} ]] && dist="dist-pristine" || dist="dist"
   prog="${p%_pristine}"
   ./buildutil/build.sh \
-    --no-branchcheck --no-wait --just-update --prefix $PWD/$instdir $prog || \
+    --no-progcheck --no-branchcheck --no-wait --just-update --prefix $PWD/$instdir $prog || \
     die "build -U failed" #clone and checkout
   cd $prog
-  [[ -z "$(hg status -mu)" ]] || die "There are modified or unknown files in $p"
-  hg checkout $branch || die "Could not checkout $branch"
-  [[ -z "$(hg status -mu)" ]] || die "There are modified or unknown files in $p"
+  [[ -z "$(git ls-files -mo --exclude-standard)" ]] || die "There are modified or unknown files in $p"
+  git checkout $branch || die "Could not checkout $branch"
+  [[ -z "$(git ls-files -mo --exclude-standard)" ]] || die "There are modified or unknown files in $p"
   if [[ $testing = "yes" ]]; then
     :
   elif [[ $p = *manual ]]; then
     sed -i "s/^VER=.*$/VER=$rel/" Makefile || die "sed of Makefile failed"
+    git add Makefile
   elif [[ -f CMakeLists.txt ]]; then
     sed -i "/set(PROJECT_VERSION/s/\"[^\"]*\"/\"$rel\"/" CMakeLists.txt || die "sed of CMakeLists.txt failed"
+    git add CMakeLists.txt
   fi
   if [[ $testing = "no" ]]; then
-    #remove old tags
-    if [[ -f .hgtags ]]; then
-      sed -i "/release_${rel}$/d" .hgtags
-    fi
     #|| true because maybe version has not changed
-    hg commit -m "Version bumped to $rel" || true
+    git commit -m "Version bumped to $rel" || true
   fi
   cd ..
 
   if [[ $testing = "yes" ]]; then
     REL="$rel" ./buildutil/build.sh \
-      --no-branchcheck --no-changelogcheck \
+      --no-progcheck --no-branchcheck --no-changelogcheck \
       --no-wait --prefix $PWD/$instdir \
       --$dist --clean-ignored "${cmake_opts[@]}" \
       $prog || die
@@ -155,8 +155,6 @@ for p in ${tools_pristine} $what; do
       --no-wait --prefix $PWD/$instdir \
       --$dist --clean-ignored "${cmake_opts[@]}" \
       $prog || die
-    #tag the release when the non-pristine version was build
-    [[ -n ${p%%*_pristine} ]] && hg -R $prog tag "release_$rel"
   fi
 done
 rm -rf $instdir
@@ -201,7 +199,9 @@ for p in $what; do
   [[ -z $r ]] && die "Could not fetch rel"
   ../buildutil/build.sh \
     --no-wait --prefix $PWD/../$instdir --no-relcheck --release $r \
-    -DEXTERNAL_BOOST=OFF --selfdownload "${cmake_opts[@]}" $p
+    --no-progcheck -DEXTERNAL_BOOST=OFF --selfdownload "${cmake_opts[@]}" $p
+  [[ -d $p/.git ]] && die ".git dir found in $p"
+  [[ -f $p/Makefile ]] || die "$p has no Makefile"
   rm -rf *
 done
 cd ..
@@ -210,13 +210,13 @@ rm -rf $instdir
 
 if [[ $testing = "no" ]]; then
   cd downloads
-  hg add votca-*-${rel}*
-  hg commit -m "Added files from release $rel"
+  git add votca-*-${rel}*
+  git commit -m "Added files from release $rel"
   cd ..
   echo "####### TODO by you #########"
   echo cd $PWD
-  echo "for p in $what buildutil downloads; do hg out -p -R \$p; done"
-  echo "for p in $what buildutil downloads; do hg push -R \$p; done"
+  echo "for p in $what downloads; do git -C \$p log -p origin/master..master; done"
+  echo "for p in $what downloads; do git -C \$p  push; done"
   echo "uploads tarball" *$rel*
 else
   echo cd $PWD
