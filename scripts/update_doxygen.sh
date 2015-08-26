@@ -45,5 +45,5 @@ cd ..
 
 cd devdoc
 git add --all
-git commit -m "$msg" && git push $url gh-pages:gh-pages
+git commit -m "$msg" && git push $url
 
