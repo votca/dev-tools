@@ -101,7 +101,7 @@ fi
 
 rel="$1"
 shopt -s extglob
-[[ $testing = "no" && ${rel} != [1-9].[0-9]?(.[1-9]|_rc[1-9])?(_pristine) ]] && die "release has the wrong form"
+[[ $testing = "no" && ${rel} != [1-9].[0-9]?(.[1-9]|_rc[1-9]) ]] && die "release has the wrong form"
 
 set -e
 instdir="instdir"
@@ -115,13 +115,8 @@ if [[ -d $build ]]; then
   rm -vrf $PWD/$build
 fi
 
-#release 1.0 - 1.2 had a pristine tarball
-[[ rel = 1.[012]* ]] && tools_pristine=tools_pristine
 #order matters for deps
-#and pristine before non-pristine to 'overwrite less components by more components'
-for p in ${tools_pristine} $what; do
-  [[ -z ${p%%*_pristine} ]] && dist="dist-pristine" || dist="dist"
-  prog="${p%_pristine}"
+for p in $what; do
   ./buildutil/build.sh \
     --no-progcheck --no-branchcheck --no-wait --just-update --depth 1 --prefix $PWD/$instdir $prog || \
     die "build -U failed" #clone and checkout
@@ -150,12 +145,12 @@ for p in ${tools_pristine} $what; do
     REL="$rel" ./buildutil/build.sh \
       --no-progcheck --no-branchcheck --no-changelogcheck \
       --no-wait --prefix $PWD/$instdir \
-      --$dist --clean-ignored "${cmake_opts[@]}" \
+      --dist --clean-ignored "${cmake_opts[@]}" \
       $prog || die
   else
     REL="$rel" ./buildutil/build.sh \
       --no-wait --prefix $PWD/$instdir \
-      --$dist --clean-ignored "${cmake_opts[@]}" \
+      --dist --clean-ignored "${cmake_opts[@]}" \
       $prog || die
   fi
 done
@@ -167,33 +162,15 @@ cd $build
 
 echo "Starting build check from tarball"
 
-if [[ rel = 1.[012]* ]]; then
-  r=""
-  for i in ../votca-tools-$rel*_pristine.tar.gz; do
-    [[ -f $i ]] || die "Could not find $i"
-    [[ -n $r ]] && die "There are two file matching votca-tools-$rel*_pristine.tar.gz"
-    cp $i .
-    [[ $testing = "yes" ]] || cp $i ../downloads
-    [[ $i =~ ../votca-tools-(.*_pristine).tar.gz ]] && r="${BASH_REMATCH[1]}"
-  done
-  [[ -z $r ]] && die "Could not fetch rel"
-  ../buildutil/build.sh \
-    --no-wait --prefix $PWD/../$instdir --no-relcheck --release $r \
-    -DEXTERNAL_BOOST=ON --selfdownload "${cmake_opts[@]}" tools
-  rm -rf *
-fi
-
 for p in $what; do
-  [[ $p = *pristine ]] && die "Edit ${0##*/} as there are multiple pristine tarballs"
   if [[ $p = *manual ]]; then
     [[ $testing = "yes" ]] || cp ../votca-$p-${rel}.pdf ../downloads
     continue
   fi
   r=""
   for i in ../votca-$p-$rel*.tar.gz; do
-    [[ $i = *_pristine* ]] && continue
     [[ -f $i ]] || die "Could not find $i"
-    [[ -n $r ]] && die "There are two non-pristine file matching votca-$p-$rel*.tar.gz"
+    [[ -n $r ]] && die "There are two file matching votca-$p-$rel*.tar.gz"
     cp $i .
     [[ $testing = "yes" ]] || cp $i ../downloads
     [[ $i =~ ../votca-$p-(.*).tar.gz ]] && r="${BASH_REMATCH[1]}"
