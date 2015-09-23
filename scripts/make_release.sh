@@ -87,7 +87,7 @@ if [[ -d buildutil ]]; then
   [[ -z "$(git ls-files -mo --exclude-standard)" ]] || die "There are modified or unknown files in buildutil"
   cd ..
 else
-  git clone $burl buildutil
+  git clone --depth 1 $burl buildutil
 fi
 
 if [[ -d downloads ]]; then
@@ -96,7 +96,7 @@ if [[ -d downloads ]]; then
   [[ -z "$(git ls-files -mo --exclude-standard)" ]] || die "There are modified or unknown files in downloads"
   cd ..
 else
-  git clone $durl downloads
+  git clone --depth 1 $durl downloads
 fi
 
 rel="$1"
@@ -123,7 +123,7 @@ for p in ${tools_pristine} $what; do
   [[ -z ${p%%*_pristine} ]] && dist="dist-pristine" || dist="dist"
   prog="${p%_pristine}"
   ./buildutil/build.sh \
-    --no-progcheck --no-branchcheck --no-wait --just-update --prefix $PWD/$instdir $prog || \
+    --no-progcheck --no-branchcheck --no-wait --just-update --depth 1 --prefix $PWD/$instdir $prog || \
     die "build -U failed" #clone and checkout
   cd $prog
   [[ -z "$(git ls-files -mo --exclude-standard)" ]] || die "There are modified or unknown files in $p"
@@ -139,8 +139,10 @@ for p in ${tools_pristine} $what; do
     git add CMakeLists.txt
   fi
   if [[ $testing = "no" ]]; then
+    git remote set-url --push origin "git@github.com:votca/${prog}.git"
     #|| true because maybe version has not changed
     git commit -m "Version bumped to $rel" || true
+    git tag "v${rel}"
   fi
   cd ..
 
@@ -184,7 +186,7 @@ fi
 for p in $what; do
   [[ $p = *pristine ]] && die "Edit ${0##*/} as there are multiple pristine tarballs"
   if [[ $p = *manual ]]; then
-    [[ $testing = "yes" ]] || cp votca-$p-${rel}.pdf ../downloads
+    [[ $testing = "yes" ]] || cp ../votca-$p-${rel}.pdf ../downloads
     continue
   fi
   r=""
@@ -215,9 +217,10 @@ if [[ $testing = "no" ]]; then
   cd ..
   echo "####### TODO by you #########"
   echo cd $PWD
-  echo "for p in $what downloads; do git -C \$p log -p origin/master..master; done"
-  echo "for p in $what downloads; do git -C \$p  push; done"
-  echo "uploads tarball" *$rel*
+  echo "for p in $what; do git -C \$p log -p origin/${branch}..${branch}; done"
+  echo "for p in $what; do git -C \$p  push --tags origin ${branch}:${branch}; done"
+  echo "git -C downloads push"
+  #echo "uploads tarball" *$rel*
 else
   echo cd $PWD
   echo "Take a look at" *$rel*
