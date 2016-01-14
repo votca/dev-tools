@@ -90,15 +90,6 @@ else
   git clone --depth 1 $burl buildutil
 fi
 
-if [[ -d downloads ]]; then
-  cd downloads
-  git pull --ff-only "$durl"
-  [[ -z "$(git ls-files -mo --exclude-standard)" ]] || die "There are modified or unknown files in downloads"
-  cd ..
-else
-  git clone --depth 1 $durl downloads
-fi
-
 rel="$1"
 shopt -s extglob
 [[ $testing = "no" && ${rel} != [1-9].[0-9]?(.[1-9]|_rc[1-9]) ]] && die "release has the wrong form"
@@ -117,10 +108,9 @@ fi
 
 #order matters for deps
 for p in $what; do
-  ./buildutil/build.sh \
-    --no-progcheck --no-branchcheck --no-wait --just-update --depth 1 --prefix $PWD/$instdir $prog || \
-    die "build -U failed" #clone and checkout
-  cd $prog
+  [[ -d ${p} ]] || git clone origin "git://github.com/votca/${prog}.git"
+  git -C ${p} pull --ff-only
+  cd $p
   [[ -z "$(git ls-files -mo --exclude-standard)" ]] || die "There are modified or unknown files in $p"
   git checkout $branch || die "Could not checkout $branch"
   [[ -z "$(git ls-files -mo --exclude-standard)" ]] || die "There are modified or unknown files in $p"
@@ -134,25 +124,15 @@ for p in $what; do
     git add CMakeLists.txt
   fi
   if [[ $testing = "no" ]]; then
+    [[ -f CHANGELOG.md && -z $(grep "^## Version ${rel} " CHANGELOG.md) ]] && \
+          die "Go and update CHANGELOG.md in ${prog} before making a release"
     git remote set-url --push origin "git@github.com:votca/${prog}.git"
     #|| true because maybe version has not changed
     git commit -m "Version bumped to $rel" || true
     git tag "v${rel}"
   fi
+  git archive --prefix "votca-${p}-${rel}/" -o "../votca-${p}-${rel}.tar.gz" HEAD || die "git archive failed"
   cd ..
-
-  if [[ $testing = "yes" ]]; then
-    REL="$rel" ./buildutil/build.sh \
-      --no-progcheck --no-branchcheck --no-changelogcheck \
-      --no-wait --prefix $PWD/$instdir \
-      --dist --clean-ignored "${cmake_opts[@]}" \
-      $prog || die
-  else
-    REL="$rel" ./buildutil/build.sh \
-      --no-wait --prefix $PWD/$instdir \
-      --dist --clean-ignored "${cmake_opts[@]}" \
-      $prog || die
-  fi
 done
 rm -rf $instdir
 mkdir $instdir
@@ -163,24 +143,20 @@ cd $build
 echo "Starting build check from tarball"
 
 for p in $what; do
-  if [[ $p = *manual ]]; then
-    [[ $testing = "yes" ]] || cp ../votca-$p-${rel}.pdf ../downloads
-    continue
-  fi
   r=""
   for i in ../votca-$p-$rel*.tar.gz; do
     [[ -f $i ]] || die "Could not find $i"
     [[ -n $r ]] && die "There are two file matching votca-$p-$rel*.tar.gz"
     cp $i .
-    [[ $testing = "yes" ]] || cp $i ../downloads
     [[ $i =~ ../votca-$p-(.*).tar.gz ]] && r="${BASH_REMATCH[1]}"
   done
   [[ -z $r ]] && die "Could not fetch rel"
   ../buildutil/build.sh \
     --no-wait --prefix $PWD/../$instdir --no-relcheck --release $r \
-    --no-progcheck -DEXTERNAL_BOOST=OFF --selfdownload "${cmake_opts[@]}" $p
+    --no-progcheck --warn-to-errors --selfdownload "${cmake_opts[@]}" $p
   [[ -d $p/.git ]] && die ".git dir found in $p"
   [[ -f $p/Makefile ]] || die "$p has no Makefile"
+  [[ $p != *manual ]] || cp ${p}/manual.pdf ../votca-$p-${rel}.pdf 
   rm -rf *
 done
 cd ..
@@ -188,16 +164,10 @@ rm -rf $build
 rm -rf $instdir
 
 if [[ $testing = "no" ]]; then
-  cd downloads
-  git add votca-*-${rel}*
-  git commit -m "Added files from release $rel"
-  cd ..
   echo "####### TODO by you #########"
   echo cd $PWD
   echo "for p in $what; do git -C \$p log -p origin/${branch}..${branch}; done"
   echo "for p in $what; do git -C \$p  push --tags origin ${branch}:${branch}; done"
-  echo "git -C downloads push"
-  #echo "uploads tarball" *$rel*
 else
   echo cd $PWD
   echo "Take a look at" *$rel*
