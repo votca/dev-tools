@@ -108,7 +108,7 @@ fi
 
 #order matters for deps
 for p in $what; do
-  [[ -d ${p} ]] || git clone origin "git://github.com/votca/${prog}.git"
+  [[ -d ${p} ]] || git clone "git://github.com/votca/${p}.git"
   git -C ${p} pull --ff-only
   cd $p
   [[ -z "$(git ls-files -mo --exclude-standard)" ]] || die "There are modified or unknown files in $p"
@@ -125,8 +125,8 @@ for p in $what; do
   fi
   if [[ $testing = "no" ]]; then
     [[ -f CHANGELOG.md && -z $(grep "^## Version ${rel} " CHANGELOG.md) ]] && \
-          die "Go and update CHANGELOG.md in ${prog} before making a release"
-    git remote set-url --push origin "git@github.com:votca/${prog}.git"
+          die "Go and update CHANGELOG.md in ${p} before making a release"
+    git remote set-url --push origin "git@github.com:votca/${p}.git"
     #|| true because maybe version has not changed
     git commit -m "Version bumped to $rel" || true
     git tag "v${rel}"
@@ -143,16 +143,9 @@ cd $build
 echo "Starting build check from tarball"
 
 for p in $what; do
-  r=""
-  for i in ../votca-$p-$rel*.tar.gz; do
-    [[ -f $i ]] || die "Could not find $i"
-    [[ -n $r ]] && die "There are two file matching votca-$p-$rel*.tar.gz"
-    cp $i .
-    [[ $i =~ ../votca-$p-(.*).tar.gz ]] && r="${BASH_REMATCH[1]}"
-  done
-  [[ -z $r ]] && die "Could not fetch rel"
+  cp ../votca-$p-${rel}.tar.gz .
   ../buildutil/build.sh \
-    --no-wait --prefix $PWD/../$instdir --no-relcheck --release $r \
+    --no-wait --prefix $PWD/../$instdir --no-relcheck --release "$rel" \
     --no-progcheck --warn-to-errors --selfdownload "${cmake_opts[@]}" $p
   [[ -d $p/.git ]] && die ".git dir found in $p"
   [[ -f $p/Makefile ]] || die "$p has no Makefile"
