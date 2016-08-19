@@ -76,10 +76,11 @@ while [[ $# -gt 0 ]]; do
  esac
 done
 
-[[ -z $2 ]] && die "${0##*/}: missing argument.\nTry ${0##*/} --help"
+[[ -z $2 ]] && die "${0##*/}: missing argument - no builddir!\nTry ${0##*/} --help"
 
 [[ -d $2 ]] || mkdir -p "$2"
 cd "$2"
+builddir="${PWD}"
 
 if [[ -d buildutil ]]; then
   cd buildutil
@@ -106,6 +107,15 @@ if [[ -d $build ]]; then
   rm -vrf $PWD/$build
 fi
 
+cleanup() {
+  [[ $testing = "no" ]] || return
+  cd ${builddir}
+  for p in $what; do
+    git -C ${p} reset --hard origin/${branch} || true
+    git -C ${p} tag --delete "v${rel}" || true
+  done
+}
+trap cleanup EXIT
 #order matters for deps
 for p in $what; do
   [[ -d ${p} ]] || git clone "git://github.com/votca/${p}.git"
