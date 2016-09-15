@@ -10,7 +10,7 @@ branch=stable
 testing=no
 clean=no
 #build manual before csgapps to avoid csgapps in the manual
-what="tools csg csg-manual csgapps csg-tutorials"
+what="tools csg csg-manual csgapps csg-tutorials xtp"
 cmake_opts=()
 usage="Usage: ${0##*/} [OPTIONS] rel_version builddir"
 
@@ -35,7 +35,7 @@ OPTIONS:
 Examples:  ${0##*/} -q
            ${0##*/} --test stable 1.2.3 builddir
 
-Report bugs and comments at https://code.google.com/p/votca/issues/list
+Report bugs and comments at https://github.com/votca/admin/issues
 eof
 }
 
@@ -154,12 +154,13 @@ echo "Starting build check from tarball"
 
 for p in $what; do
   cp ../votca-$p-${rel}.tar.gz .
-  ../buildutil/build.sh \
+  ../buildutil/build.sh --build-manual \
     --no-wait --prefix $PWD/../$instdir --no-relcheck --release "$rel" \
     --no-progcheck --warn-to-errors --selfdownload "${cmake_opts[@]}" $p
   [[ -d $p/.git ]] && die ".git dir found in $p"
   [[ -f $p/Makefile ]] || die "$p has no Makefile"
   [[ $p != *manual ]] || cp ${p}/manual.pdf ../votca-$p-${rel}.pdf 
+  [[ -f ${p}/manual/${p}-manual.pdf ]] && cp ${p}/manual/${p}-manual.pdf ../votca-$p-${rel}.pdf
   rm -rf *
 done
 cd ..
