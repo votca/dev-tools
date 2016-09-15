@@ -160,7 +160,7 @@ for p in $what; do
   [[ -d $p/.git ]] && die ".git dir found in $p"
   [[ -f $p/Makefile ]] || die "$p has no Makefile"
   [[ $p != *manual ]] || cp ${p}/manual.pdf ../votca-$p-${rel}.pdf 
-  [[ -f ${p}/manual/${p}-manual.pdf ]] && cp ${p}/manual/${p}-manual.pdf ../votca-$p-${rel}.pdf
+  [[ -f ${p}/manual/${p}-manual.pdf ]] && cp ${p}/manual/${p}-manual.pdf ../votca-$p-manual-${rel}.pdf
   rm -rf *
 done
 cd ..
