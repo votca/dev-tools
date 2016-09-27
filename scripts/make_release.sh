@@ -109,6 +109,7 @@ fi
 
 cleanup() {
   [[ $testing = "no" ]] || return
+  echo "####### ERROR ABOVE #########"
   cd ${builddir}
   for p in $what; do
     git -C ${p} reset --hard origin/${branch} || true
@@ -167,6 +168,7 @@ done
 cd ..
 rm -rf $build
 rm -rf $instdir
+trap - EXIT
 
 if [[ $testing = "no" ]]; then
   echo "####### TODO by you #########"
