@@ -119,6 +119,7 @@ trap cleanup EXIT
 #order matters for deps
 for p in $what; do
   [[ -d ${p} ]] || git clone "git://github.com/votca/${p}.git"
+  git -C ${p} remote update --prune
   git -C ${p} pull --ff-only
   cd $p
   [[ -z "$(git ls-files -mo --exclude-standard)" ]] || die "There are modified or unknown files in $p"
