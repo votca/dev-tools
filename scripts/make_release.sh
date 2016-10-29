@@ -134,6 +134,10 @@ for p in $what; do
   elif [[ -f CMakeLists.txt ]]; then
     sed -i "/set(PROJECT_VERSION/s/\"[^\"]*\"/\"$rel\"/" CMakeLists.txt || die "sed of CMakeLists.txt failed"
     git add CMakeLists.txt
+    if [[ -f CHANGELOG.md ]]; then
+      sed -i "/^## Version ${rel} /s/released ..\...\.../released $(date +%d.%m.%y)/" CHANGELOG.md
+      git add CHANGELOG.md
+    fi
   fi
   if [[ $testing = "no" ]]; then
     [[ -f CHANGELOG.md && -z $(grep "^## Version ${rel} " CHANGELOG.md) ]] && \
