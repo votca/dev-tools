@@ -159,12 +159,13 @@ cd $build
 echo "Starting build check from tarball"
 
 for p in $what; do
+  [[ $p = *xtp* ]] && cbuild=. || cbuild="cbuild" #for build-manual
   cp ../votca-$p-${rel}.tar.gz .
-  ../buildutil/build.sh --build-manual \
+  ../buildutil/build.sh --build-manual --builddir "$cbuild" \
     --no-wait --prefix $PWD/../$instdir --no-relcheck --release "$rel" \
     --no-progcheck --warn-to-errors --selfdownload "${cmake_opts[@]}" $p
   [[ -d $p/.git ]] && die ".git dir found in $p"
-  [[ -f $p/Makefile ]] || die "$p has no Makefile"
+  [[ -f $p/Makefile || -f $p/${cbuild}/Makefile ]] || die "$p has no Makefile"
   [[ $p != *manual ]] || cp ${p}/manual.pdf ../votca-$p-${rel}.pdf 
   [[ -f ${p}/manual/${p}-manual.pdf ]] && cp ${p}/manual/${p}-manual.pdf ../votca-$p-manual-${rel}.pdf
   rm -rf *
