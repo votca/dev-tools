@@ -4,13 +4,12 @@
 #- allow $what to be more flexible
 
 
-burl="git@github.com:votca/buildutil.git"
-durl="git@github.com:votca/downloads.git"
+burl="git@github.com:votca/votca.git"
 branch=stable
 testing=no
 clean=no
 #build manual before csgapps to avoid csgapps in the manual
-what="tools csg csg-manual csgapps csg-tutorials xtp"
+what="tools csg csg-manual csgapps csg-tutorials ctp xtp"
 cmake_opts=()
 usage="Usage: ${0##*/} [OPTIONS] rel_version builddir"
 
@@ -20,6 +19,15 @@ die () {
 }
 
 unset CSGSHARE VOTCASHARE
+
+j="$(grep -c processor /proc/cpuinfo 2>/dev/null)" || j=0
+((j++))
+
+is_part() { #checks if 1st argument is part of the set given by other arguments
+  [[ -z $1 || -z $2 ]] && die "${FUNCNAME[0]}: Missing argument"
+  [[ " ${@:2} " = *" $1 "* ]]
+}
+export -f is_part
 
 show_help() {
   cat << eof
@@ -82,13 +90,13 @@ done
 cd "$2"
 builddir="${PWD}"
 
-if [[ -d buildutil ]]; then
-  cd buildutil
+if [[ -d votca ]]; then
+  cd votca
   git pull --ff-only "$burl" master
-  [[ -z "$(git ls-files -mo --exclude-standard)" ]] || die "There are modified or unknown files in buildutil"
+  #[[ -z "$(git ls-files -mo --exclude-standard)" ]] || die "There are modified or unknown files in votca"
   cd ..
 else
-  git clone --depth 1 $burl buildutil
+  git clone --depth 1 $burl votca
 fi
 
 rel="$1"
@@ -117,6 +125,7 @@ cleanup() {
   done
 }
 trap cleanup EXIT
+
 #order matters for deps
 for p in $what; do
   [[ -d ${p} ]] || git clone "git://github.com/votca/${p}.git"
@@ -128,9 +137,6 @@ for p in $what; do
   [[ -z "$(git ls-files -mo --exclude-standard)" ]] || die "There are modified or unknown files in $p"
   if [[ $testing = "yes" ]]; then
     :
-  elif [[ $p = *manual ]]; then
-    sed -i "s/^VER=.*$/VER=$rel/" Makefile || die "sed of Makefile failed"
-    git add Makefile
   elif [[ -f CMakeLists.txt ]]; then
     sed -i "/set(PROJECT_VERSION/s/\"[^\"]*\"/\"$rel\"/" CMakeLists.txt || die "sed of CMakeLists.txt failed"
     git add CMakeLists.txt
@@ -150,6 +156,7 @@ for p in $what; do
   git archive --prefix "votca-${p}-${rel}/" -o "../votca-${p}-${rel}.tar.gz" HEAD || die "git archive failed"
   cd ..
 done
+
 rm -rf $instdir
 mkdir $instdir
 [ -d $build ] && die "$build is already there, run 'rm -rf $PWD/$build'"
@@ -158,18 +165,16 @@ cd $build
 
 echo "Starting build check from tarball"
 
-for p in $what; do
-  [[ $p = *xtp* ]] && cbuild=. || cbuild="cbuild" #for build-manual
-  cp ../votca-$p-${rel}.tar.gz .
-  ../buildutil/build.sh --build-manual --builddir "$cbuild" \
-    --no-wait --prefix $PWD/../$instdir --no-relcheck --release "$rel" \
-    --no-progcheck --warn-to-errors --selfdownload "${cmake_opts[@]}" $p
-  [[ -d $p/.git ]] && die ".git dir found in $p"
-  [[ -f $p/Makefile || -f $p/${cbuild}/Makefile ]] || die "$p has no Makefile"
-  [[ $p != *manual ]] || cp ${p}/manual.pdf ../votca-$p-${rel}.pdf 
-  [[ -f ${p}/manual/${p}-manual.pdf ]] && cp ${p}/manual/${p}-manual.pdf ../votca-$p-manual-${rel}.pdf
-  rm -rf *
-done
+cmake -DCMAKE_INSTALL_PREFIX=$PWD/../$instdir -DMODULE_BUILD=ON \
+      -DVOTCA_TARBALL_DIR=${PWD}/.. -DVOTCA_TARBALL_TAG="${rel}" \
+      -DENABLE_TESTING=OFF -DVOTCA_TEST_OPTS="-E (_imc|spce_cma_simple)" \
+      $(is_part csg-manual ${what} && echo -DBUILD_CSG_MANUAL=ON) \
+      $(is_part csgapps ${what} && echo -DBUILD_CSGAPPS=ON) \
+      $(is_part ctp ${what} && echo -DBUILD_CTP=ON -DBUILD_CTP_MANUAL=ON ) \
+      $(is_part xtp ${what} && echo -DBUILD_XTP=ON -DBUILD_XTP_MANUAL=ON ) \
+      ${cmake_opts[@]} ../votca
+make -j${j}
+cp $PWD/../$instdir/share/doc/*/manual*.pdf ..
 cd ..
 rm -rf $build
 rm -rf $instdir
