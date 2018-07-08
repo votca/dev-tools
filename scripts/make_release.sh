@@ -4,7 +4,7 @@
 #- allow $what to be more flexible
 
 
-burl="git@github.com:votca/votca.git"
+burl="https://github.com/votca/votca.git"
 branch=stable
 testing=no
 clean=no
@@ -84,6 +84,12 @@ while [[ $# -gt 0 ]]; do
  esac
 done
 
+for i in tools csg csg-tutorials; do
+  if ! is_part $i ${what}; then
+    die "$i needs to be part of the repo selection"
+  fi
+done
+
 [[ -z $2 ]] && die "${0##*/}: missing argument - no builddir!\nTry ${0##*/} --help"
 
 [[ -d $2 ]] || mkdir -p "$2"
@@ -91,13 +97,12 @@ cd "$2"
 builddir="${PWD}"
 
 if [[ -d votca ]]; then
-  cd votca
-  git pull --ff-only "$burl" master
-  #[[ -z "$(git ls-files -mo --exclude-standard)" ]] || die "There are modified or unknown files in votca"
-  cd ..
+  git -C votca pull --ff-only "$burl" master
+  [[ -z "$(git -C votca ls-files -mo --exclude-standard)" ]] || die "There are modified or unknown files in votca"
 else
   git clone --depth 1 $burl votca
 fi
+git -C votca remote set-url --push origin "git@github.com:votca/votca.git"
 
 rel="$1"
 shopt -s extglob
@@ -154,7 +159,7 @@ for p in $what; do
     git tag "v${rel}"
   fi
   git archive --prefix "votca-${p}-${rel}/" -o "../votca-${p}-${rel}.tar.gz" HEAD || die "git archive failed"
-  cd ..
+  cd -
 done
 
 rm -rf $instdir
@@ -167,15 +172,17 @@ echo "Starting build check from tarball"
 
 cmake -DCMAKE_INSTALL_PREFIX=$PWD/../$instdir -DMODULE_BUILD=ON \
       -DVOTCA_TARBALL_DIR=${PWD}/.. -DVOTCA_TARBALL_TAG="${rel}" \
-      -DENABLE_TESTING=OFF -DVOTCA_TEST_OPTS="-E (_imc|spce_cma_simple)" \
+      -DENABLE_TESTING=ON -DVOTCA_TEST_OPTS="-E \(_imc\|spce_cma_simple\)" \
       $(is_part csg-manual ${what} && echo -DBUILD_CSG_MANUAL=ON) \
       $(is_part csgapps ${what} && echo -DBUILD_CSGAPPS=ON) \
       $(is_part ctp ${what} && echo -DBUILD_CTP=ON -DBUILD_CTP_MANUAL=ON ) \
       $(is_part xtp ${what} && echo -DBUILD_XTP=ON -DBUILD_XTP_MANUAL=ON ) \
       ${cmake_opts[@]} ../votca
 make -j${j}
-cp $PWD/../$instdir/share/doc/*/manual*.pdf ..
-cd ..
+if is_part csg-manual ${what} || $(is_part ctp ${what} || $(is_part xtp ${what} ]]; then
+  cp $PWD/../$instdir/share/doc/*/manual*.pdf ..
+fi
+cd -
 rm -rf $build
 rm -rf $instdir
 trap - EXIT
@@ -185,7 +192,13 @@ if [[ $testing = "no" ]]; then
   echo cd $PWD
   echo "for p in $what; do git -C \$p log -p origin/${branch}..${branch}; done"
   echo "for p in $what; do git -C \$p  push --tags origin ${branch}:${branch}; done"
+  echo "git -C votca submodule foreach git checkout ${branch}" 
+  echo "git -C votca submodule foreach git pull" 
+  echo "git -C votca add -u" 
+  echo "git -C votca commit -m 'Version bumped to $rel'"
+  echo "git -C votca tag 'v${rel}'"
+  echo "git -C votca --tags origin ${branch}:${branch}"
 else
-  echo cd $PWD
+  echo cd $PWD/votca
   echo "Take a look at" *$rel*
 fi
