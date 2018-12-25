@@ -181,9 +181,10 @@ cmake -DCMAKE_INSTALL_PREFIX=$PWD/../$instdir -DMODULE_BUILD=ON \
       $(is_part xtp ${what} && echo -DBUILD_XTP=ON -DBUILD_XTP_MANUAL=ON ) \
       ${cmake_opts[@]} ../votca
 make -j${j}
-if is_part csg-manual ${what} || is_part xtp ${what}; then
-  cp $PWD/../$instdir/share/doc/*/manual*.pdf ..
-fi
+for p in csg-manual xtp; do
+  is_part $p ${what} || continue;
+  cp $PWD/../$instdir/share/doc/votca-$p/*manual.pdf ../votca-${p%-manual}-manual-${rel}.pdf
+done
 cd -
 rm -rf $build
 rm -rf $instdir
@@ -201,6 +202,6 @@ if [[ $testing = "no" ]]; then
   echo "git -C votca tag 'v${rel}'"
   echo "git -C votca --tags origin ${branch}:${branch}"
 else
-  echo cd $PWD/votca
+  echo cd $PWD
   echo "Take a look at" *$rel*
 fi
