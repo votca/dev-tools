@@ -97,10 +97,12 @@ cd "$2"
 builddir="${PWD}"
 
 if [[ -d votca ]]; then
-  git -C votca pull --ff-only "$burl" master
+  git -C votca remote update --prune
+  git -C votca checkout $branch
+  git -C votca pull --ff-only "$burl" $branch
   [[ -z "$(git -C votca ls-files -mo --exclude-standard)" ]] || die "There are modified or unknown files in votca"
 else
-  git clone --depth 1 $burl votca
+  git clone -b $branch --depth 1 $burl votca
 fi
 git -C votca remote set-url --push origin "git@github.com:votca/votca.git"
 
