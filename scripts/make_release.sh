@@ -9,7 +9,7 @@ branch=stable
 testing=no
 clean=no
 #build manual before csgapps to avoid csgapps in the manual
-what="tools csg csg-manual csgapps csg-tutorials ctp xtp"
+what="tools csg csg-manual csgapps csg-tutorials xtp"
 cmake_opts=()
 usage="Usage: ${0##*/} [OPTIONS] rel_version builddir"
 
@@ -175,11 +175,10 @@ cmake -DCMAKE_INSTALL_PREFIX=$PWD/../$instdir -DMODULE_BUILD=ON \
       -DENABLE_TESTING=ON -DVOTCA_TEST_OPTS="-E \(_imc\|spce_cma_simple\)" \
       $(is_part csg-manual ${what} && echo -DBUILD_CSG_MANUAL=ON) \
       $(is_part csgapps ${what} && echo -DBUILD_CSGAPPS=ON) \
-      $(is_part ctp ${what} && echo -DBUILD_CTP=ON -DBUILD_CTP_MANUAL=ON ) \
       $(is_part xtp ${what} && echo -DBUILD_XTP=ON -DBUILD_XTP_MANUAL=ON ) \
       ${cmake_opts[@]} ../votca
 make -j${j}
-if is_part csg-manual ${what} || $(is_part ctp ${what} || $(is_part xtp ${what} ]]; then
+if is_part csg-manual ${what} || $(is_part xtp ${what} ]]; then
   cp $PWD/../$instdir/share/doc/*/manual*.pdf ..
 fi
 cd -
