@@ -174,13 +174,13 @@ echo "Starting build check from tarball"
 
 cmake -DCMAKE_INSTALL_PREFIX=$PWD/../$instdir -DMODULE_BUILD=ON \
       -DVOTCA_TARBALL_DIR=${PWD}/.. -DVOTCA_TARBALL_TAG="${rel}" \
-      -DENABLE_TESTING=ON -DVOTCA_TEST_OPTS="-E \(_imc\|spce_cma_simple\|spce_.*_lammps\)" \
+      -DENABLE_TESTING=ON -DVOTCA_TEST_OPTS="-E \(_imc\|spce_cma_simple\)" \
       -DENABLE_REGRESSION_TESTING=ON \
       $(is_part csg-manual ${what} && echo -DBUILD_CSG_MANUAL=ON) \
       $(is_part csgapps ${what} && echo -DBUILD_CSGAPPS=ON) \
       $(is_part xtp ${what} && echo -DBUILD_XTP=ON -DBUILD_XTP_MANUAL=ON ) \
       ${cmake_opts[@]} ../votca
-make -j${j}
+CSG_NUM_THREADS=2 make -j${j} #see votca/csg#291
 for p in csg-manual xtp; do
   is_part $p ${what} || continue;
   cp $PWD/../$instdir/share/doc/votca-$p/*manual.pdf ../votca-${p%-manual}-manual-${rel}.pdf
