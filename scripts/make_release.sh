@@ -4,8 +4,7 @@
 #- allow $what to be more flexible
 
 
-burl="git@github.com:votca/buildutil.git"
-durl="git@github.com:votca/downloads.git"
+burl="https://github.com/votca/votca.git"
 branch=stable
 testing=no
 clean=no
@@ -20,6 +19,15 @@ die () {
 }
 
 unset CSGSHARE VOTCASHARE
+
+j="$(grep -c processor /proc/cpuinfo 2>/dev/null)" || j=0
+((j++))
+
+is_part() { #checks if 1st argument is part of the set given by other arguments
+  [[ -z $1 || -z $2 ]] && die "${FUNCNAME[0]}: Missing argument"
+  [[ " ${@:2} " = *" $1 "* ]]
+}
+export -f is_part
 
 show_help() {
   cat << eof
@@ -76,20 +84,27 @@ while [[ $# -gt 0 ]]; do
  esac
 done
 
+for i in tools csg csg-tutorials; do
+  if ! is_part $i ${what}; then
+    die "$i needs to be part of the repo selection"
+  fi
+done
+
 [[ -z $2 ]] && die "${0##*/}: missing argument - no builddir!\nTry ${0##*/} --help"
 
 [[ -d $2 ]] || mkdir -p "$2"
 cd "$2"
 builddir="${PWD}"
 
-if [[ -d buildutil ]]; then
-  cd buildutil
-  git pull --ff-only "$burl" master
-  [[ -z "$(git ls-files -mo --exclude-standard)" ]] || die "There are modified or unknown files in buildutil"
-  cd ..
+if [[ -d votca ]]; then
+  git -C votca remote update --prune
+  git -C votca checkout $branch
+  git -C votca pull --ff-only "$burl" $branch
+  [[ -z "$(git -C votca ls-files -mo --exclude-standard)" ]] || die "There are modified or unknown files in votca"
 else
-  git clone --depth 1 $burl buildutil
+  git clone -b $branch --depth 1 $burl votca
 fi
+git -C votca remote set-url --push origin "git@github.com:votca/votca.git"
 
 rel="$1"
 shopt -s extglob
@@ -117,6 +132,7 @@ cleanup() {
   done
 }
 trap cleanup EXIT
+
 #order matters for deps
 for p in $what; do
   [[ -d ${p} ]] || git clone "git://github.com/votca/${p}.git"
@@ -128,9 +144,6 @@ for p in $what; do
   [[ -z "$(git ls-files -mo --exclude-standard)" ]] || die "There are modified or unknown files in $p"
   if [[ $testing = "yes" ]]; then
     :
-  elif [[ $p = *manual ]]; then
-    sed -i "s/^VER=.*$/VER=$rel/" Makefile || die "sed of Makefile failed"
-    git add Makefile
   elif [[ -f CMakeLists.txt ]]; then
     sed -i "/set(PROJECT_VERSION/s/\"[^\"]*\"/\"$rel\"/" CMakeLists.txt || die "sed of CMakeLists.txt failed"
     git add CMakeLists.txt
@@ -148,8 +161,9 @@ for p in $what; do
     git tag "v${rel}"
   fi
   git archive --prefix "votca-${p}-${rel}/" -o "../votca-${p}-${rel}.tar.gz" HEAD || die "git archive failed"
-  cd ..
+  cd -
 done
+
 rm -rf $instdir
 mkdir $instdir
 [ -d $build ] && die "$build is already there, run 'rm -rf $PWD/$build'"
@@ -158,19 +172,20 @@ cd $build
 
 echo "Starting build check from tarball"
 
-for p in $what; do
-  [[ $p = *xtp* ]] && cbuild=. || cbuild="cbuild" #for build-manual
-  cp ../votca-$p-${rel}.tar.gz .
-  ../buildutil/build.sh --build-manual --builddir "$cbuild" \
-    --no-wait --prefix $PWD/../$instdir --no-relcheck --release "$rel" \
-    --no-progcheck --warn-to-errors --selfdownload "${cmake_opts[@]}" $p
-  [[ -d $p/.git ]] && die ".git dir found in $p"
-  [[ -f $p/Makefile || -f $p/${cbuild}/Makefile ]] || die "$p has no Makefile"
-  [[ $p != *manual ]] || cp ${p}/manual.pdf ../votca-$p-${rel}.pdf 
-  [[ -f ${p}/manual/${p}-manual.pdf ]] && cp ${p}/manual/${p}-manual.pdf ../votca-$p-manual-${rel}.pdf
-  rm -rf *
+cmake -DCMAKE_INSTALL_PREFIX=$PWD/../$instdir -DMODULE_BUILD=ON \
+      -DVOTCA_TARBALL_DIR=${PWD}/.. -DVOTCA_TARBALL_TAG="${rel}" \
+      -DENABLE_TESTING=ON -DVOTCA_TEST_OPTS="-E \(_imc\|spce_cma_simple\)" \
+      -DENABLE_REGRESSION_TESTING=ON \
+      $(is_part csg-manual ${what} && echo -DBUILD_CSG_MANUAL=ON) \
+      $(is_part csgapps ${what} && echo -DBUILD_CSGAPPS=ON) \
+      $(is_part xtp ${what} && echo -DBUILD_XTP=ON -DBUILD_XTP_MANUAL=ON ) \
+      ${cmake_opts[@]} ../votca
+CSG_NUM_THREADS=2 make -j${j} #see votca/csg#291
+for p in csg-manual xtp; do
+  is_part $p ${what} || continue;
+  cp $PWD/../$instdir/share/doc/votca-$p/*manual.pdf ../votca-${p%-manual}-manual-${rel}.pdf
 done
-cd ..
+cd -
 rm -rf $build
 rm -rf $instdir
 trap - EXIT
@@ -180,6 +195,16 @@ if [[ $testing = "no" ]]; then
   echo cd $PWD
   echo "for p in $what; do git -C \$p log -p origin/${branch}..${branch}; done"
   echo "for p in $what; do git -C \$p  push --tags origin ${branch}:${branch}; done"
+  echo "git -C votca submodle update --init"
+  echo "git -C votca submodule foreach git checkout ${branch}" 
+  echo "git -C votca submodule foreach git pull"
+  echo "sed -i '/set(PROJECT_VERSION/s/\"[^\"]*\"/\"$rel\"/' votca/CMakeLists.txt"
+  echo "git -C votca diff --submodule"
+  echo "git -C votca add -u" 
+  echo "git -C votca commit -m 'Version bumped to $rel'"
+  echo "git -C votca tag 'v${rel}'"
+  echo "git -C votca push --tags origin ${branch}:${branch}"
+  echo "And do NOT forget to upload pdf to github."
 else
   echo cd $PWD
   echo "Take a look at" *$rel*
