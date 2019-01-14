@@ -104,6 +104,7 @@ if [[ -d votca ]]; then
 else
   git clone -b $branch --depth 1 $burl votca
 fi
+git -C votca submodule update --init
 git -C votca remote set-url --push origin "git@github.com:votca/votca.git"
 
 rel="$1"
@@ -180,7 +181,7 @@ cmake -DCMAKE_INSTALL_PREFIX=$PWD/../$instdir -DMODULE_BUILD=ON \
       $(is_part csgapps ${what} && echo -DBUILD_CSGAPPS=ON) \
       $(is_part xtp ${what} && echo -DBUILD_XTP=ON -DBUILD_XTP_MANUAL=ON ) \
       ${cmake_opts[@]} ../votca
-CSG_NUM_THREADS=2 make -j${j} #see votca/csg#291
+make -j${j}
 for p in csg-manual xtp; do
   is_part $p ${what} || continue;
   cp $PWD/../$instdir/share/doc/votca-$p/*manual.pdf ../votca-${p%-manual}-manual-${rel}.pdf
