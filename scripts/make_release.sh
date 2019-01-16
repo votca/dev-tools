@@ -196,7 +196,7 @@ if [[ $testing = "no" ]]; then
   echo cd $PWD
   echo "for p in $what; do git -C \$p log -p origin/${branch}..${branch}; done"
   echo "for p in $what; do git -C \$p  push --tags origin ${branch}:${branch}; done"
-  echo "git -C votca submodle update --init"
+  echo "git -C votca submodule update --init"
   echo "git -C votca submodule foreach git checkout ${branch}" 
   echo "git -C votca submodule foreach git pull"
   echo "sed -i '/set(PROJECT_VERSION/s/\"[^\"]*\"/\"$rel\"/' votca/CMakeLists.txt"
@@ -205,7 +205,7 @@ if [[ $testing = "no" ]]; then
   echo "git -C votca commit -m 'Version bumped to $rel'"
   echo "git -C votca tag 'v${rel}'"
   echo "git -C votca push --tags origin ${branch}:${branch}"
-  echo "And do NOT forget to upload pdf to github."
+  echo "And do NOT forget to upload pdfs to github."
 else
   echo cd $PWD
   echo "Take a look at" *$rel*
