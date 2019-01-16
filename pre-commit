@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# This commit hook will automatically update the files that have been staged for
+# a commit
+commit_hash=$(git log -1 | grep commit | awk '{print $2}')
+
+list_of_changed_header_and_source_files=$(git diff --cached --name-only $commit_hash | grep '.cc\|.h')
+
+year=$(date +"%Y")
+for file in ${list_of_changed_header_and_source_files[@]}
+do
+  echo "Updating Copyright date in "$file
+  sed -i 's/Copyright \(.*\)-.* The/Copyright \1-2019 The/g' $file
+  echo "Applying clang style formatting to file "$file
+  clang-format -i -style=file $file
+done
