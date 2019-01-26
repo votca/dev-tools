@@ -14,6 +14,10 @@
 #
 # Then you should be good to go
 
+# This variable will ignore any includes proposed by include-what-you-use 
+# that are from the boost library
+ignore_includes=("boost")
+
 commit_hash=$(git log -1 | grep commit | awk '{print $2}')
 
 list_of_changed_header_and_source_files=$(git diff --cached --name-only $commit_hash | grep '.cc\|.h')
@@ -21,9 +25,39 @@ list_of_changed_header_and_source_files=$(git diff --cached --name-only $commit_
 year=$(date +"%Y")
 for file in ${list_of_changed_header_and_source_files[@]}
 do
+  ##############################################################################
+  # Updating License Date
+  ##############################################################################
+
   echo "Updating Copyright date in "$file
   sed -i 's/Copyright \(.*\)-.* The/Copyright \1-2019 The/g' $file
   echo "Applying clang style formatting to file "$file
+
+  ##############################################################################
+  # Updating Includes
+  ##############################################################################
+  data=$(include-what-you-use $file 2>&1 )
+  echo "$data" | fix_includes.py $file
+  extra_includes=$(echo "$data" | awk '/should add these lines/,/should remove these lines/ { print $2}' )
+
+  # Filter includes
+  filtered_includes=()
+  for ignore in ${ignore_includes[@]}
+  do
+    filtered_includes+=$(echo "$extra_includes" | grep $ignore )
+  done
+  
+  # Remove includes from file if the match 
+  for item in ${filtered_includes[@]}
+  do
+    item=$(echo $item | sed 's/\//\\\//g')
+    echo $item
+    sed -i "/#include ${item}/d" $file
+  done
+
+  ##############################################################################
+  # Formatting Files
+  ##############################################################################
   clang-format -i -style=file $file
   git add $file
 done
