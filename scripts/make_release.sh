@@ -9,7 +9,7 @@ branch=stable
 testing=no
 clean=no
 #build manual before csgapps to avoid csgapps in the manual
-what="tools csg csg-manual csgapps csg-tutorials xtp"
+what="tools csg csg-manual csgapps csg-tutorials ctp xtp"
 cmake_opts=()
 usage="Usage: ${0##*/} [OPTIONS] rel_version builddir"
 
@@ -179,10 +179,11 @@ cmake -DCMAKE_INSTALL_PREFIX=$PWD/../$instdir -DMODULE_BUILD=ON \
       -DENABLE_REGRESSION_TESTING=ON \
       $(is_part csg-manual ${what} && echo -DBUILD_CSG_MANUAL=ON) \
       $(is_part csgapps ${what} && echo -DBUILD_CSGAPPS=ON) \
+      $(is_part ctp ${what} && echo -DBUILD_CTP=ON -DBUILD_CTP_MANUAL=ON ) \
       $(is_part xtp ${what} && echo -DBUILD_XTP=ON -DBUILD_XTP_MANUAL=ON ) \
       ${cmake_opts[@]} ../votca
 make -j${j}
-for p in csg-manual xtp; do
+for p in csg-manual ctp xtp; do
   is_part $p ${what} || continue;
   cp $PWD/../$instdir/share/doc/votca-$p/*manual.pdf ../votca-${p%-manual}-manual-${rel}.pdf
 done
