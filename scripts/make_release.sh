@@ -175,7 +175,7 @@ echo "Starting build check from tarball"
 
 cmake -DCMAKE_INSTALL_PREFIX=$PWD/../$instdir -DMODULE_BUILD=ON \
       -DVOTCA_TARBALL_DIR=${PWD}/.. -DVOTCA_TARBALL_TAG="${rel}" \
-      -DENABLE_TESTING=ON -DVOTCA_TEST_OPTS="-E \(_imc\|spce_cma_simple\)" \
+      -DENABLE_TESTING=ON \
       -DENABLE_REGRESSION_TESTING=ON \
       $(is_part csg-manual ${what} && echo -DBUILD_CSG_MANUAL=ON) \
       $(is_part csgapps ${what} && echo -DBUILD_CSGAPPS=ON) \
