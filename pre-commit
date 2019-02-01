@@ -1,11 +1,32 @@
 #!/bin/bash
 
 # This commit hook will automatically update the files that have been staged for
-# a commit. It will update the copy right date to indicate the correct year. It
-# will also apply git-format to the files that are being staged. 
+# a commit. It will update the copyright date to indicate the correct year. It
+# will also apply include-what-you-use to the files, this feature is meant to
+# remove extraneous includes and include the headers relevant to each
+# particular file, however it is in its alpha stage of development and does
+# still contain bugs. Finally, the hook will apply git-format rules to the files
+# that are being staged. 
 #
-# To use it, it must be placed in the .gith/hooks folder of whatever repository
-# is being used. It must also be made executable. 
+# Defaults for using each of the features are shown below:
+# License Update:       ON
+# Include what you use: OFF
+# Clange formatting:    ON
+#
+# The default settings can be toggled by defining the following environment 
+# variables
+#
+# export DATE_ON=1 - turns on 
+# export DATE_ON=0 - turns off 
+#
+# export IWYU_ON=1 - turns on 
+# export IWYU_ON=0 - turns off
+#
+# export CLANG_FORMAT_ON=1 - turns on
+# export CLANG_FORMAT_ON=0 - turns off
+#
+# To use the hook, it must be placed in the .gith/hooks folder of whatever 
+# repository is being used. It must also be made executable. 
 #
 # Assuming I am going to be using repo votca/csg
 #
@@ -14,28 +35,50 @@
 #
 # Then you should be good to go
 
-# This variable will ignore any includes proposed by include-what-you-use 
-# that are from the boost library
-ignore_includes=("boost")
+################################################################################
+# Updating License Date
+################################################################################
+# Default is on 
+if [ -z ${DATE_ON} ] # If not defined turn on
+then
+  environement_variable_update_license=1
+else
+  if [ "${DATE_ON}" -eq "1" ]
+  then
+    environement_variable_update_license=1
+  else 
+    environement_variable_update_license=0
+  fi
+fi
 
-commit_hash=$(git log -1 | grep commit | awk '{print $2}')
-
-list_of_changed_header_and_source_files=$(git diff --cached --name-only $commit_hash | grep '.cc\|.h')
-
-year=$(date +"%Y")
-for file in ${list_of_changed_header_and_source_files[@]}
-do
-  ##############################################################################
-  # Updating License Date
-  ##############################################################################
-
+update_license_dates_of_altered_files(){
   echo "Updating Copyright date in "$file
   sed -i 's/Copyright \(.*\)-.* The/Copyright \1-2019 The/g' $file
-  echo "Applying clang style formatting to file "$file
+}
 
-  ##############################################################################
-  # Updating Includes
-  ##############################################################################
+################################################################################
+# Updating Includes
+################################################################################
+# Default is off
+if [ -z ${IWYU_ON} ] # If not defined turn off 
+then
+  echo "Include what you use is not set" 
+  environement_variable_apply_include_what_you_use=0
+else
+    if [ "1" -eq "${IWYU_ON}" ]
+    then
+      environement_variable_apply_include_what_you_use=1
+    else
+      environement_variable_apply_include_what_you_use=0
+    fi
+fi
+# This variable will ignore any includes proposed by include-what-you-use 
+# that are from the boost library, this was included as IWYU is in the alpha
+# phase of development and tends to screw up with third party libraries. 
+ignore_includes=()
+
+apply_include_what_you_use(){
+  echo "Applying IWYU to file "$file
   data=$(include-what-you-use $file 2>&1 )
   echo "$data" | fix_includes.py $file
   extra_includes=$(echo "$data" | awk '/should add these lines/,/should remove these lines/ { print $2}' )
@@ -54,10 +97,54 @@ do
     echo $item
     sed -i "/#include ${item}/d" $file
   done
+}
 
-  ##############################################################################
-  # Formatting Files
-  ##############################################################################
+################################################################################
+# Formatting Files
+################################################################################
+# Default is on 
+if [ -z ${CLANG_FORMAT_ON} ] # if not defined turn it on  
+then
+  environement_variable_apply_clang_formatting=1
+else
+  if [ "${CLANG_FORMAT_ON}" -eq "1" ]
+  then
+    environement_variable_apply_clang_formatting=1
+  else 
+    environement_variable_apply_clang_formatting=0
+  fi
+fi
+
+apply_clang_formating_to_altered_files(){
+  echo "Applying clang style formatting to file "$file
   clang-format -i -style=file $file
+}
+
+################################################################################
+# Main
+################################################################################
+
+commit_hash=$(git log -1 | grep commit | awk '{print $2}')
+
+list_of_changed_header_and_source_files=$(git diff --cached --name-only $commit_hash | grep '.cc\|.h')
+
+year=$(date +"%Y")
+for file in ${list_of_changed_header_and_source_files[@]}
+do
+  if [ "1" -eq "${environement_variable_update_license}" ] 
+  then
+    update_license_dates_of_altered_files
+  fi
+
+  if [ "1" -eq "${environement_variable_apply_include_what_you_use}" ] 
+  then
+    apply_include_what_you_use
+  fi
+  
+  if [ "1" -eq "${environement_variable_apply_clang_formatting}" ] 
+  then
+    apply_clang_formating_to_altered_files
+  fi
+
   git add $file
 done
