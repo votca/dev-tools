@@ -86,7 +86,7 @@ cd ${tmpdir}
 echo "Unzipping $zip to $tmpdir"
 unzip -q -d votca "$zip"
 docker pull votca/buildenv:${basetag}
-[[ $module = votca ]] && basedir=/builds/votca/${module} || basedir=/builds/votca/${module}/votca
+basedir=/builds/votca/${module}/votca
 cat > Dockerfile <<EOF
 FROM votca/buildenv:${basetag}
 WORKDIR ${basedir}/build
