@@ -1,7 +1,8 @@
 #! /bin/bash
 
 usage="Usage: ${0##*/} [OPTIONS] path/to/artifacts.zip"
-dockertag="latest"
+basetag="latest"
+dockername="votca_debug"
 
 die () {
   echo -e "$*"
@@ -14,8 +15,11 @@ This script will start an environment to debug CI builds
 $usage
 OPTIONS:
     --help          Show this help
--t, --tag TAG       Specify the docker tag of votca/buildenv to use
-                    Default: $dockertag
+-b, --basetag TAG   Specify the docker tag of votca/buildenv to use
+                    Default: $basetag
+-n, --name NAME     Specify the name of docker build
+                    Default: $dockername
+-c, --clean         Clean up temp dir and docker images 
 
 Examples:  ${0##*/} ./artifacts.zip
            ${0##*/} --tag ubuntu ./storage/old_build.zip
@@ -24,21 +28,34 @@ Report bugs and comments at https://github.com/votca/dev-tools/issues
 eof
 }
 
+clean_up() {
+  set -x
+  rm -rf /tmp/${dockername}.*
+  docker ps -a | awk "(\$2==\"${dockername}\"){print \$1}" | xargs docker rm
+  docker rmi "${dockername}"
+}
+
 shopt -s extglob
 while [[ $# -gt 0 ]]; do
   if [[ ${1} = --*=* ]]; then # case --xx=yy
     set -- "${1%%=*}" "${1#*=}" "${@:2}" # --xx=yy to --xx yy
   elif [[ ${1} = -[^-]?* ]]; then # case -xy split
-    if [[ ${1} = -[t]* ]]; then #short opts with arguments
+    if [[ ${1} = -[nt]* ]]; then #short opts with arguments
        set -- "${1:0:2}" "${1:2}" "${@:2}" # -xy to -x y
     else #short opts without arguments
        set -- "${1:0:2}" "-${1:2}" "${@:2}" # -xy to -x -y
     fi
  fi
  case $1 in
-   -t|--tag)
-     dockertag="$2"
+   -n|--name)
+     dockername="$2"
      shift 2;;
+   -b|--basetag)
+     basetag="$2"
+     shift 2;;
+   -c|--clean)
+     clean_up
+     exit $?;;
    --help)
      show_help
      exit $?;;
@@ -64,13 +81,16 @@ zip="$2"
 [[ $module = @(tools|csg|csg-manual|csg-tutorials|csgapps|ctp|xtp) ]] || die "Unknown module"
 
 set -e
-tmpdir=$(mktemp -d /tmp/votca_debug.XXXXXX)
+tmpdir=$(mktemp -d /tmp/${dockername}.XXXXXX)
 cd ${tmpdir}
-unzip -d votca "$zip"
-docker pull votca/buildenv:${dockertag}
+echo "Unzipping $zip to $tmpdir"
+unzip -q -d votca "$zip"
+docker pull votca/buildenv:${basetag}
+[[ $module = votca ]] && basedir=/builds/votca/${module} || basedir=/builds/votca/${module}/votca
 cat > Dockerfile <<EOF
-FROM votca/buildenv:${dockertag}
-WORKDIR /builds/votca/${module}/votca/build
+FROM votca/buildenv:${basetag}
+WORKDIR ${basedir}/build
 EOF
-docker build -t votca_debug .
-docker run -it -v ${tmpdir}/votca:/builds/votca/${module} votca_debug /bin/bash
+docker build -t ${dockername} .
+echo "Use 'docker run -it -v ${tmpdir}/votca:${basedir} ${dockername} /bin/bash' to re-run this"
+docker run -it -v ${tmpdir}/votca:${basedir} ${dockername} /bin/bash
