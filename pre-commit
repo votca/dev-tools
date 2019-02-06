@@ -115,9 +115,13 @@ else
   fi
 fi
 
+# Exclude .h.in files controlled by CMake
 apply_clang_formating_to_altered_files(){
-  echo "Applying clang style formatting to file "$file
-  clang-format -i -style=file $file
+  if [[ $file != *".h.in" ]]
+  then
+    echo "Applying clang style formatting to file "$file
+    clang-format -i -style=file $file
+  fi
 }
 
 ################################################################################
