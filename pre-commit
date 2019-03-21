@@ -29,6 +29,9 @@
 # export MARKDOWN_FORMAT_ON=1 - turns on
 # export MARKDOWN_FORMAT_ON=0 - turns off
 #
+# export PYTHON_FORMAT_ON=1 - turns on
+# export PYTHON_FORMAT_ON=0 - turns off
+#
 # To use the hook, it must be placed in the .gith/hooks folder of whatever 
 # repository is being used. It must also be made executable. 
 #
@@ -152,6 +155,31 @@ apply_markdown_formating_to_altered_files(){
   fi
 }
 
+################################################################################
+# Formatting Files .py 
+################################################################################
+# Default is on 
+if [ -z ${PYTHON_FORMAT_ON} ] # if not defined turn it on  
+then
+  environement_variable_apply_python_formatting=1
+else
+  if [ "${PYTHON_FORMAT_ON}" -eq "1" ]
+  then
+    environement_variable_apply_python_formatting=1
+  else 
+    environement_variable_apply_python_formatting=0
+  fi
+fi
+
+apply_python_formating_to_altered_files(){
+  if [[ $file == *".py" ]]
+  then
+    echo "Applying python formatting to file "$file
+    autopep8 -i $file
+  fi
+}
+
+
 
 ################################################################################
 # Main
@@ -184,5 +212,9 @@ do
     apply_markdown_formating_to_altered_files
   fi
 
+  if [ "1" -eq "{environement_variable_apply_python_formatting}" ]
+  then
+    apply_python_formating_to_altered_files
+  fi
   git add $file
 done
