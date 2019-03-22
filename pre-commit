@@ -12,7 +12,8 @@
 # License Update:       ON
 # Include what you use: OFF
 # Clange formatting:    ON
-# MARKDOWN_FORMAT_ON:   ON
+# MARKDOWN_FORMAT_ON:   ON 
+# PYTHON_FORMAT_ON:     ON
 #
 # The default settings can be toggled by defining the following environment 
 # variables
