@@ -1,6 +1,6 @@
 #! /bin/bash
 
-usage="Usage: ${0##*/} [OPTIONS] path/to/artifacts.zip"
+usage="Usage: ${0##*/} [OPTIONS] MODULE path/to/artifacts.zip"
 basetag="latest"
 dockername="votca_debug"
 
@@ -21,8 +21,8 @@ OPTIONS:
                     Default: $dockername
 -c, --clean         Clean up temp dir and docker images 
 
-Examples:  ${0##*/} ./artifacts.zip
-           ${0##*/} --tag ubuntu ./storage/old_build.zip
+Examples:  ${0##*/} xtp ./artifacts.zip
+           ${0##*/} --tag ubuntu votca ./storage/old_build.zip
 
 Report bugs and comments at https://github.com/votca/dev-tools/issues
 eof
