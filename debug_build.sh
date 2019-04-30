@@ -86,10 +86,10 @@ cd ${tmpdir}
 echo "Unzipping $zip to $tmpdir"
 unzip -q -d votca "$zip"
 docker pull votca/buildenv:${basetag}
-basedir=/builds/votca/${module}/votca
+basedir=/builds/votca/${module}
 cat > Dockerfile <<EOF
 FROM votca/buildenv:${basetag}
-WORKDIR ${basedir}/build
+WORKDIR ${basedir}/votca/build
 EOF
 docker build -t ${dockername} .
 echo "Use 'docker run -it -v ${tmpdir}/votca:${basedir} ${dockername} /bin/bash' to re-run this"
