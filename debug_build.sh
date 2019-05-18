@@ -22,7 +22,7 @@ OPTIONS:
 -c, --clean         Clean up temp dir and docker images 
 
 Examples:  ${0##*/} xtp ./artifacts.zip
-           ${0##*/} --tag ubuntu votca ./storage/old_build.zip
+           ${0##*/} --basetag ubuntu votca ./storage/old_build.zip
 
 Report bugs and comments at https://github.com/votca/dev-tools/issues
 eof
