@@ -20,6 +20,9 @@ die () {
 
 unset CSGSHARE VOTCASHARE
 
+# So that realtime test don't try to run X11
+export GNUTERM=dumb
+
 j="$(grep -c processor /proc/cpuinfo 2>/dev/null)" || j=0
 ((j++))
 
