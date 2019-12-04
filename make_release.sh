@@ -8,8 +8,7 @@ burl="https://github.com/votca/votca.git"
 branch=stable
 testing=no
 clean=no
-#build manual before csgapps to avoid csgapps in the manual
-what="tools csg csg-manual csgapps csg-tutorials ctp xtp"
+what="tools csg csg-manual csgapps csg-tutorials xtp xtp-tutorials"
 cmake_opts=()
 usage="Usage: ${0##*/} [OPTIONS] rel_version builddir"
 
@@ -106,7 +105,8 @@ if [[ -d votca ]]; then
   git -C votca submodule update --init
   [[ -z "$(git -C votca ls-files -mo --exclude-standard)" ]] || die "There are modified or unknown files in votca"
 else
-  git clone --recursive -b $branch --depth 1 $burl votca
+  git clone --recursive $burl votca
+  git -C votca checkout $branch origin/$branch
 fi
 git -C votca remote set-url --push origin "git@github.com:votca/votca.git"
 
@@ -182,11 +182,10 @@ cmake -DCMAKE_INSTALL_PREFIX=$PWD/../$instdir -DMODULE_BUILD=ON \
       -DENABLE_REGRESSION_TESTING=ON \
       $(is_part csg-manual ${what} && echo -DBUILD_CSG_MANUAL=ON) \
       $(is_part csgapps ${what} && echo -DBUILD_CSGAPPS=ON) \
-      $(is_part ctp ${what} && echo -DBUILD_CTP=ON -DBUILD_CTP_MANUAL=ON ) \
-      $(is_part xtp ${what} && echo -DBUILD_XTP=ON -DBUILD_XTP_MANUAL=ON ) \
+      $(is_part xtp ${what} && echo -DBUILD_XTP=ON) \
       ${cmake_opts[@]} ../votca
 make -j${j}
-for p in csg-manual ctp xtp; do
+for p in csg-manual; do
   is_part $p ${what} || continue;
   cp $PWD/../$instdir/share/doc/votca-$p/*manual.pdf ../votca-${p%-manual}-manual-${rel}.pdf
 done
