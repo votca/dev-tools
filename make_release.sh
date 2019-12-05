@@ -106,7 +106,7 @@ if [[ -d votca ]]; then
   [[ -z "$(git -C votca ls-files -mo --exclude-standard)" ]] || die "There are modified or unknown files in votca"
 else
   git clone --recursive $burl votca
-  git -C votca checkout $branch origin/$branch
+  git -C votca checkout $branch
 fi
 git -C votca remote set-url --push origin "git@github.com:votca/votca.git"
 
@@ -130,8 +130,10 @@ cleanup() {
   [[ $testing = "no" ]] || return
   echo "####### ERROR ABOVE #########"
   cd ${builddir}
-  for p in $what; do
+  for p in votca $what; do
+    echo $p
     git -C ${p} reset --hard origin/${branch} || true
+    git -C votca/${p} reset --hard origin/${branch} || true
     git -C ${p} tag --delete "v${rel}" || true
   done
 }
@@ -192,22 +194,24 @@ done
 cd -
 rm -rf $build
 rm -rf $instdir
+if [[ $testing = "no" ]]; then
+  sed -i "/set(PROJECT_VERSION/s/\"[^\"]*\"/\"$rel\"/" votca/CMakeLists.txt || die "sed of CMakeLists.txt failed"
+  git -C votca submodule update --init
+  git -C votca submodule foreach git checkout ${branch}
+  for p in $what; do
+     git -C votca/$p pull $PWD/$p stable
+  done
+  git -C votca add -u
+  git -C votca commit -m "Version bumped to $rel"
+  git -C votca tag "v${rel}"
+fi
 trap - EXIT
 
 if [[ $testing = "no" ]]; then
   echo "####### TODO by you #########"
   echo cd $PWD
-  echo "for p in $what; do git -C \$p log -p origin/${branch}..${branch}; done"
-  echo "for p in $what; do git -C \$p  push --tags origin ${branch}:${branch}; done"
-  echo "git -C votca submodule update --init"
-  echo "git -C votca submodule foreach git checkout ${branch}" 
-  echo "git -C votca submodule foreach git pull"
-  echo "sed -i '/set(PROJECT_VERSION/s/\"[^\"]*\"/\"$rel\"/' votca/CMakeLists.txt"
-  echo "git -C votca diff --submodule"
-  echo "git -C votca add -u" 
-  echo "git -C votca commit -m 'Version bumped to $rel'"
-  echo "git -C votca tag 'v${rel}'"
-  echo "git -C votca push --tags origin ${branch}:${branch}"
+  echo "for p in votca $what; do git -C \$p log -p --submodule origin/${branch}..${branch}; done"
+  echo "for p in votca $what; do git -C \$p  push --tags origin ${branch}:${branch}; done"
   echo "And do NOT forget to upload pdfs to github."
 else
   echo cd $PWD
