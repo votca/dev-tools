@@ -31,6 +31,9 @@
 # export CLANG_TIDY_ON=1 - turns on
 # export CLANG_TIDY_ON=0 - turns off
 #
+# export HEADER_GUARD_ON=1 - turns on
+# export HEADER_GUARD_ON=0 - turns off
+#
 # export MARKDOWN_FORMAT_ON=1 - turns on
 # export MARKDOWN_FORMAT_ON=0 - turns off
 #
@@ -66,6 +69,45 @@ fi
 update_license_dates_of_altered_files(){
   echo "Updating Copyright date in "$file
   sed -i 's/Copyright \(.*\)-.* The/Copyright \1-2019 The/g' $file
+}
+
+################################################################################
+# Checking Header Guard
+################################################################################
+# Default is on 
+if [ -z ${HEADER_GUARD_ON} ] # If not defined turn on
+then
+  environement_variable_header_guard=1
+else
+  if [ "${HEADER_GUARD_ON}" -eq "1" ]
+  then
+    environement_variable_header_guard=1
+  else 
+    environement_variable_header_guard=0
+  fi
+fi
+
+check_header_guard_of_altered_files(){
+  # Only applies to header files
+  if [[ $file == *".h" ]] 
+  then
+    # Only fixes if already included 
+    count=$(grep -c "#ifndef" $file)
+    if [ "$count" -ne "0" ] 
+    then 
+      echo "Updating Header Guard for file $file"
+      repo_base=$(basename `git rev-parse --show-toplevel`)
+      repo_base=$(echo ${repo_base^^})
+      file_base=$(basename -s .h $file)
+      file_base=$(echo ${file_base^^})
+      sed -i "0,/#ifndef/ s/#ifndef .*/#ifndef VOTCA_${repo_base}_${file_base}_H/" $file
+      sed -i "0,/#define/ s/#define .*/#define VOTCA_${repo_base}_${file_base}_H/" $file
+
+      # Find last matching endif
+      line_num=$(grep -n "#endif" $file  | tail -n1 | sed 's/:.*//')
+      sed -i "${line_num}s/#endif.*/#endif \/\/ VOTCA_${repo_base}_${file_base}_H/" $file
+    fi
+  fi
 }
 
 ################################################################################
@@ -219,6 +261,11 @@ list_of_changed_header_and_source_files=$(git diff --diff-filter=d --cached --na
 year=$(date +"%Y")
 for file in ${list_of_changed_header_and_source_files[@]}
 do
+
+  if [ "1" -eq "${environement_variable_header_guard}" ] 
+  then
+    check_header_guard_of_altered_files
+  fi
 
   if [ "1" -eq "${environement_variable_update_license}" ] 
   then
