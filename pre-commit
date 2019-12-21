@@ -219,6 +219,7 @@ list_of_changed_header_and_source_files=$(git diff --diff-filter=d --cached --na
 year=$(date +"%Y")
 for file in ${list_of_changed_header_and_source_files[@]}
 do
+
   if [ "1" -eq "${environement_variable_update_license}" ] 
   then
     update_license_dates_of_altered_files
@@ -233,7 +234,13 @@ do
   then
     apply_clang_formating_to_altered_files
   fi
-   git add $file
+
+  if [ "1" -eq "${environement_variable_apply_clang_tidy}" ] 
+  then
+    apply_clang_tidy_to_altered_files
+  fi
+
+  git add $file
 done
 
 list_of_changed_markdown_files=$(git diff --diff-filter=d --cached --name-only $commit_hash | grep '\(\.md\|\.MD|\.Md\)$')
