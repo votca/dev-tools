@@ -68,7 +68,8 @@ fi
 
 update_license_dates_of_altered_files(){
   echo "Updating Copyright date in "$file
-  sed -i 's/Copyright \(.*\)-.* The/Copyright \1-2020 The/g' $file
+  new_date=$(date +%Y)
+  sed -i 's/Copyright \(.*\)-.* The/Copyright \1-'"$new_date"' The/g' $file
 }
 
 ################################################################################
