@@ -196,6 +196,7 @@ rm -rf $build
 rm -rf $instdir
 if [[ $testing = "no" ]]; then
   sed -i "/set(PROJECT_VERSION/s/\"[^\"]*\"/\"$rel\"/" votca/CMakeLists.txt || die "sed of CMakeLists.txt failed"
+  sed -i "/stable/s/or 'stable' or '[^']*'/or 'stable' or '$rel'/" votca/README.md || die "sed of README.md failed"
   git -C votca submodule update --init
   git -C votca submodule foreach git checkout ${branch}
   for p in $what; do
